@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scx-backend-postgres
+    # 容器内也监听 5433，与 scx-service 完全一致（postgres 默认监听 5432）
+    command: ["postgres", "-c", "port=5433"]
+    environment:
+      POSTGRES_USER: scx
+      POSTGRES_PASSWORD: scx_password
+      POSTGRES_DB: scx-backend
+    ports:
+      - "5433:5433"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scx -p 5433"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: scx-backend-redis
+    # 容器内也监听 6388，与 scx-service 完全一致（redis 默认监听 6379）
+    command: ["redis-server", "--port", "6388"]
+    ports:
+      - "6388:6388"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6388", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
