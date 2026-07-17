@@ -107,7 +107,9 @@ class AuthServiceTest(
     @Test
     fun `validateAccessToken returns null when cached token differs (login elsewhere)`() {
         // 单点登录：同一用户重新登录后，旧 token 失效
+        // 注：token 含毫秒级 timestamp，等待 1ms 确保新旧 token 的 timestamp 不同
         val oldToken = authService.generateAccessToken(userId, email)
+        Thread.sleep(2)
         val newToken = authService.generateAccessToken(userId, email)
         assertNotEquals(oldToken, newToken)
         assertNull(authService.validateAccessToken(oldToken))

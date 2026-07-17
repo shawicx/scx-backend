@@ -1,7 +1,9 @@
 package com.scx.backend.config
 
 import com.scx.backend.common.web.AccessLogInterceptor
+import com.scx.backend.security.AuthInterceptor
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -12,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @Configuration
 class WebConfig(
     private val accessLogInterceptor: AccessLogInterceptor,
+    private val authInterceptor: AuthInterceptor,
 ) : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
@@ -23,7 +26,13 @@ class WebConfig(
     }
 
     override fun addInterceptors(registry: InterceptorRegistry) {
-        // 访问日志拦截器，拦截所有请求
-        registry.addInterceptor(accessLogInterceptor).addPathPatterns("/**")
+        // 鉴权拦截器（HIGHEST_PRECEDENCE，先于访问日志执行）
+        // 对标 scx-service AuthGuard：@Public 放行，其余要求有效 token
+        registry.addInterceptor(authInterceptor)
+            .addPathPatterns("/**")
+            .order(Ordered.HIGHEST_PRECEDENCE)
+        // 访问日志拦截器
+        registry.addInterceptor(accessLogInterceptor)
+            .addPathPatterns("/**")
     }
 }

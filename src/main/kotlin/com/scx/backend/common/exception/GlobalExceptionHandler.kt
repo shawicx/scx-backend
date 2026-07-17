@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 /**
  * 全局异常处理
@@ -66,6 +67,24 @@ class GlobalExceptionHandler {
             path = request.requestURI,
         )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    /**
+     * 静态资源/路由未找到 → 404
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFound(
+        ex: NoResourceFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse> {
+        logger.warn("资源未找到: {} | url={}", ex.message, request.requestURI)
+        val body = ApiResponse.error(
+            statusCode = HttpStatus.NOT_FOUND.value(),
+            message = "资源未找到",
+            data = null,
+            path = request.requestURI,
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
     }
 
     /**
