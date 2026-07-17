@@ -1,6 +1,7 @@
 package com.scx.backend.config
 
 import com.scx.backend.common.web.AccessLogInterceptor
+import com.scx.backend.security.AdminInterceptor
 import com.scx.backend.security.AuthInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class WebConfig(
     private val accessLogInterceptor: AccessLogInterceptor,
     private val authInterceptor: AuthInterceptor,
+    private val adminInterceptor: AdminInterceptor,
 ) : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
@@ -31,6 +33,10 @@ class WebConfig(
         registry.addInterceptor(authInterceptor)
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE)
+        // 管理员拦截器（对标 scx-service AdminGuard，检测 @Admin 注解）
+        registry.addInterceptor(adminInterceptor)
+            .addPathPatterns("/**")
+            .order(Ordered.HIGHEST_PRECEDENCE + 1)
         // 访问日志拦截器
         registry.addInterceptor(accessLogInterceptor)
             .addPathPatterns("/**")

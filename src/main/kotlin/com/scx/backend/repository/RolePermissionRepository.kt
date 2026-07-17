@@ -9,6 +9,7 @@ interface RolePermissionRepository : JpaRepository<RolePermission, String> {
     fun findByRoleId(roleId: String): List<RolePermission>
     fun findByPermissionId(permissionId: String): List<RolePermission>
     fun findByRoleIdAndPermissionId(roleId: String, permissionId: String): RolePermission?
+    fun findByRoleIdAndPermissionIdIn(roleId: String, permissionIds: List<String>): List<RolePermission>
     fun deleteByRoleId(roleId: String): Int
     fun existsByRoleIdAndPermissionId(roleId: String, permissionId: String): Boolean
     fun countByPermissionId(permissionId: String): Long

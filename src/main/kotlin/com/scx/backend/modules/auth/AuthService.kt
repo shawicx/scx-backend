@@ -3,10 +3,10 @@ package com.scx.backend.modules.auth
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.constants.TtlConstants
+import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.modules.cache.CacheService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Mac
@@ -95,7 +95,7 @@ class AuthService(
      */
     fun generateEncryptionKey(): EncryptionKey {
         val key = ByteArray(32).also { SecureRandom().nextBytes(it) }.toHex()
-        val keyId = generateUlid()
+        val keyId = IdGenerator.nextId()
         cacheService.setWithMilliseconds(
             CacheKeys.encryptionKey(keyId),
             key,
@@ -166,35 +166,6 @@ class AuthService(
     }
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
-
-    /**
-     * 生成 ULID（26 字符 Crockford Base32）
-     * 对标 Node ulid 库：时间戳(10) + 随机(16)
-     */
-    private fun generateUlid(): String {
-        val encoding = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-        val timestamp = System.currentTimeMillis()
-        val random = ByteArray(10).also { SecureRandom().nextBytes(it) }
-
-        val sb = StringBuilder(26)
-        // 时间戳部分（10 字符）
-        var ts = timestamp
-        for (i in 9 downTo 0) {
-            sb.setCharAtSafe(i, encoding[(ts and 0x1F).toInt()])
-            ts = ts shr 5
-        }
-        // 随机部分（16 字符）
-        for (i in 0 until 16) {
-            val byteIndex = i % 10
-            sb.append(encoding[(random[byteIndex].toInt() and 0xFF) % 32])
-        }
-        return sb.toString()
-    }
-
-    private fun StringBuilder.setCharAtSafe(index: Int, ch: Char) {
-        while (this.length <= index) this.append('0')
-        this[index] = ch
-    }
 }
 
 /** 令牌解析结果 */
