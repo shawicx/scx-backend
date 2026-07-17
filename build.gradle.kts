@@ -40,6 +40,9 @@ dependencies {
 
     // 数据库
     runtimeOnly("org.postgresql:postgresql")
+    // Spring Boot 4.0 将 Flyway 自动配置拆分为独立模块 spring-boot-flyway，
+    // 仅引入 flyway-core 不会触发自动迁移。必须同时引入此模块。
+    implementation("org.springframework.boot:spring-boot-flyway")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
 
