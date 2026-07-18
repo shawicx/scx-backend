@@ -96,10 +96,8 @@ class SecurityIntegrationTest(
     fun `actuator health endpoint is accessible without token`() {
         val resp = get("/api/actuator/health")
         assertEquals(200, resp.statusCode())
-        // health 响应被 GlobalResponseHandler 包装为 {data: {status: "UP", ...}}
-        @Suppress("UNCHECKED_CAST")
-        val data = bodyJson(resp)["data"] as Map<String, Any>
-        assertEquals("UP", data["status"])
+        // actuator 端点不经过 GlobalResponseHandler 包装，status 在顶层
+        assertEquals("UP", bodyJson(resp)["status"])
     }
 
     @Test

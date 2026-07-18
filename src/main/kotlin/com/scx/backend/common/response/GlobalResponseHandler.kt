@@ -40,6 +40,16 @@ class GlobalResponseHandler : ResponseBodyAdvice<Any> {
 
         val servletRequest = (request as ServletServerHttpRequest).servletRequest
         val path = servletRequest.requestURI
+
+        // 排除非业务端点：Swagger 文档、Actuator、静态资源（不包装为 ApiResponse）
+        if (path.startsWith("/api/v3/api-docs") ||
+            path.startsWith("/api/swagger") ||
+            path.startsWith("/api/webjars") ||
+            path.startsWith("/api/actuator")
+        ) {
+            return body
+        }
+
         val status = (response as ServletServerHttpResponse).servletResponse.status
 
         // 处理含 message 字段的对象（对标源项目 TransformInterceptor 的 message 提取逻辑）

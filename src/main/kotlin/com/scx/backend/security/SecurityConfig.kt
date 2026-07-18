@@ -32,6 +32,9 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 // Actuator 端点放行（对标 @Public 的 /api/health 等）
                 auth.requestMatchers("/api/actuator/**").permitAll()
+                // Swagger / OpenAPI 文档放行
+                auth.requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**",
+                    "/api/swagger-resources/**", "/api/webjars/**").permitAll()
                 // 其余请求暂全部放行：业务鉴权由 AuthInterceptor 基于 @Public 注解强制
                 // （与源项目 AuthGuard 全局拦截 + @Public 白名单语义一致）
                 auth.anyRequest().permitAll()

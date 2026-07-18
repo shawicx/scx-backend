@@ -19,7 +19,7 @@ spring:
 # 邮件：dev 默认用 stub（不发真实邮件，验证码仍生成并存 Redis）
 # 改为 true 则用真实 SMTP（需配置 MAIL_HOST/USER/PASSWORD）
 mail:
-  enabled: false
+  enabled: true
 
 logging:
   level:

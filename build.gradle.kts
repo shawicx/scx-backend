@@ -39,6 +39,9 @@ dependencies {
     // Jackson Kotlin 支持
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
+    // OpenAPI 文档（springdoc 3.x 支持 Spring Boot 4）
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+
     // 数据库
     runtimeOnly("org.postgresql:postgresql")
     // Spring Boot 4.0 将 Flyway 自动配置拆分为独立模块 spring-boot-flyway，
@@ -76,13 +79,14 @@ tasks.withType<Test> {
 // ============================================================
 // 环境配置自动匹配
 // ============================================================
-// - bootRun（本地运行）：默认 dev profile（stub 邮件 + 调试日志）
-// - bootJar / build（构建打包）：默认 prod profile（真实 SMTP + 关闭调试）
-// - 优先级：命令行 -Dspring.profiles.active > 环境变量 SPRING_PROFILES_ACTIVE > 以下默认值
+// - bootRun（本地运行）：默认 dev profile
+// - 环境变量通过 systemProperty 透传给 JVM（绕开 Gradle daemon 不读新 export 的问题）
+//   这样 `export MAIL_HOST=xxx && ./gradlew bootRun` 能生效
 // ============================================================
 
-// 本地运行默认 dev（除非显式指定 -Pprod 或环境变量）
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    // 仅设置默认 profile；环境变量统一由 .env 文件 + spring-dotenv 加载，
+    // IDEA / bootRun / java -jar / Docker 四种启动方式读取逻辑完全一致。
     val profile = System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev"
     args = listOf("--spring.profiles.active=$profile")
 }

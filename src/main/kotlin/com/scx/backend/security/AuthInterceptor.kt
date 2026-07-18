@@ -32,6 +32,14 @@ class AuthInterceptor(
             return true
         }
 
+        // 0. 放行 Swagger / OpenAPI 文档端点（免鉴权）
+        val uri = request.requestURI
+        if (uri.startsWith("/api/swagger-ui") || uri.startsWith("/api/v3/api-docs") ||
+            uri.startsWith("/api/swagger-resources") || uri.startsWith("/api/webjars")
+        ) {
+            return true
+        }
+
         // 1. 检测 @Public
         val isPublic = handler.hasMethodAnnotation(Public::class.java) ||
             handler.beanType.isAnnotationPresent(Public::class.java)
