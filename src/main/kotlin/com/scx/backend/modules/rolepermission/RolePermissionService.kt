@@ -6,6 +6,7 @@ import com.scx.backend.entity.RolePermission
 import com.scx.backend.repository.PermissionRepository
 import com.scx.backend.repository.RolePermissionRepository
 import com.scx.backend.repository.RoleRepository
+import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -21,6 +22,7 @@ class RolePermissionService(
     private val rolePermissionRepository: RolePermissionRepository,
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
+    private val entityManager: EntityManager,
 ) {
     private val logger = LoggerFactory.getLogger(RolePermissionService::class.java)
 
@@ -84,12 +86,26 @@ class RolePermissionService(
                 throw SystemException.dataNotFound("Permissions not found: ${missingIds.joinToString(", ")}")
             }
         }
-        rolePermissionRepository.deleteByRoleId(roleId)
+        // 用原生 SQL 执行删除+插入，绕过 Hibernate 的 insert-before-delete 执行顺序问题
+        // （JPA 批量 delete 会排在 insert 之后执行，导致新插入记录被一并删除）
+        entityManager.createNativeQuery("DELETE FROM role_permissions WHERE \"roleId\" = :roleId")
+            .setParameter("roleId", roleId)
+            .executeUpdate()
         val created = if (permissionIds.isNotEmpty()) {
             permissionIds.distinct().map { permId ->
-                rolePermissionRepository.save(
-                    RolePermission(id = IdGenerator.nextId(), roleId = roleId, permissionId = permId),
-                )
+                RolePermission(id = IdGenerator.nextId(), roleId = roleId, permissionId = permId)
+            }.also { batch ->
+                // 批量插入
+                batch.forEach { rp ->
+                    entityManager.createNativeQuery(
+                        "INSERT INTO role_permissions (id, \"roleId\", \"permissionId\", \"createdAt\") VALUES (:id, :rid, :pid, :now)",
+                    )
+                        .setParameter("id", rp.id)
+                        .setParameter("rid", rp.roleId)
+                        .setParameter("pid", rp.permissionId)
+                        .setParameter("now", java.time.LocalDateTime.now())
+                        .executeUpdate()
+                }
             }
         } else {
             emptyList()
