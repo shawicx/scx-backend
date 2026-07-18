@@ -1,0 +1,32 @@
+# ============================================================
+# 生产环境配置（application-prod.yml）
+# ============================================================
+# 构建部署时激活（设置 SPRING_PROFILES_ACTIVE=prod）。
+# 特点：真实 SMTP、关闭 SQL 日志、开启模板缓存、关闭 Swagger。
+# 所有敏感配置（DB密码/JWT密钥/SMTP授权码）必须通过环境变量注入。
+# ============================================================
+
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  thymeleaf:
+    cache: true
+
+# 生产环境启用真实邮件发送
+mail:
+  enabled: true
+
+# 生产环境关闭 Swagger（避免暴露接口文档）
+swagger:
+  enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: INFO
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO

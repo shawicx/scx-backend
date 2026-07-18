@@ -34,6 +34,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Jackson Kotlin 支持
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -70,4 +71,23 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// ============================================================
+// 环境配置自动匹配
+// ============================================================
+// - bootRun（本地运行）：默认 dev profile（stub 邮件 + 调试日志）
+// - bootJar / build（构建打包）：默认 prod profile（真实 SMTP + 关闭调试）
+// - 优先级：命令行 -Dspring.profiles.active > 环境变量 SPRING_PROFILES_ACTIVE > 以下默认值
+// ============================================================
+
+// 本地运行默认 dev（除非显式指定 -Pprod 或环境变量）
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    val profile = System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev"
+    args = listOf("--spring.profiles.active=$profile")
+}
+
+// 构建打包时，在 jar 内置 prod 为默认 profile
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
+    environment = mapOf("SPRING_PROFILES_ACTIVE" to "prod")
 }

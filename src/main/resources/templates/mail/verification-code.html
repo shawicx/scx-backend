@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>邮箱验证码</title>
+  </head>
+  <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;" th:text="${appName}">AppName</h1>
+        <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9;">邮箱验证码</p>
+      </div>
+      <!-- Content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: 400;">您好！</h2>
+        <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+          感谢您使用 <span th:text="${appName}">AppName</span>。您的邮箱验证码是：
+        </p>
+        <!-- Verification Code -->
+        <div style="background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
+          <div style="font-size: 36px; font-weight: bold; color: #495057; letter-spacing: 8px; font-family: 'Courier New', monospace;" th:text="${code}">123456</div>
+        </div>
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 30px 0;">
+          <p style="color: #856404; margin: 0; font-size: 14px;">
+            <strong>⚠️ 重要提醒：</strong><br />
+            • 该验证码将在 <strong>10分钟</strong> 后失效<br />
+            • 请勿将验证码泄露给他人<br />
+            • 如果您没有请求此验证码，请忽略此邮件
+          </p>
+        </div>
+        <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
+          如果您有任何疑问，请联系我们的客服团队。
+        </p>
+      </div>
+      <!-- Footer -->
+      <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6;">
+        <p style="color: #6c757d; font-size: 12px; margin: 0; text-align: center;">
+          此邮件由系统自动发送，请勿回复。<br />
+          &copy; <span th:text="${year}">2026</span> <span th:text="${appName}">AppName</span>. 保留所有权利。
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

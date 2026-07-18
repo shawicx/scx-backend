@@ -32,15 +32,25 @@ spring:
       port: ${REDIS_PORT:6388}
       password: ${REDIS_PASSWORD:}
 
-  # 邮件，对标 mail.config.ts（模板在 Step 9 补）
+  # 邮件，对标 mail.config.ts
+  # 敏感凭据（SMTP 授权码）不设默认值，必须通过环境变量注入，避免泄露
   mail:
     host: ${MAIL_HOST:smtp.example.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USER:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USER:noreply@example.com}
+    password: ${MAIL_PASSWORD}  # 必须通过环境变量注入，无默认值
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+
+  # Thymeleaf 模板引擎（邮件模板，默认从 classpath:/templates/ 加载，模板用 mail/xxx 路径）
+  thymeleaf:
+    cache: false
+
+# 邮件模块开关：false 用 StubMailService（不发真实邮件），true 用 SmtpMailService
+mail:
+  enabled: ${MAIL_ENABLED:true}
+  timeout-ms: ${MAIL_TIMEOUT_MS:30000}
 
 # 自定义应用配置（对标 env.config.ts 的 app/swagger）
 app:

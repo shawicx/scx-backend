@@ -1,11 +1,29 @@
+# ============================================================
+# 开发环境配置（application-dev.yml）
+# ============================================================
+# 本地运行的默认 profile（application.yml 默认 active=dev）。
+# 特点：stub 邮件（不发真实邮件，避免 SMTP 配置）、详细 SQL 日志、关闭缓存。
+# 如需本地发送真实邮件：设置环境变量 MAIL_ENABLED=true 并配置 SMTP 凭据。
+# ============================================================
+
 spring:
   jpa:
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
-    show-sql: true
+
+  thymeleaf:
+    cache: false
+
+# 邮件：dev 默认用 stub（不发真实邮件，验证码仍生成并存 Redis）
+# 改为 true 则用真实 SMTP（需配置 MAIL_HOST/USER/PASSWORD）
+mail:
+  enabled: false
 
 logging:
   level:
+    root: INFO
     org.hibernate.SQL: DEBUG
     org.flywaydb: DEBUG
+    com.scx.backend: DEBUG
