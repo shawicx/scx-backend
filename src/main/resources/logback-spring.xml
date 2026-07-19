@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-  <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+  <!-- 日志目录：默认 /tmp/scx-backend-logs（容器内对所有用户可写，避免 Paketo 镜像
+       工作目录 /workspace 对非 root 用户不可写导致 RollingFileAppender 初始化崩溃）。
+       本地开发如需写到项目根的 logs 目录，设置环境变量 LOG_DIR=logs 即可覆盖。 -->
+  <property name="LOG_DIR" value="${LOG_DIR:-/tmp/scx-backend-logs}"/>
   <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
 
   <!-- 控制台输出 -->
@@ -86,9 +89,6 @@
 
   <!-- prod 环境 -->
   <springProfile name="prod">
-    <!-- 容器化部署：日志目录指向可写绝对路径，避免 Paketo 镜像工作目录 /workspace
-         对非 root 用户不可写导致 Logback 初始化崩溃。优先使用环境变量 LOG_DIR。 -->
-    <property name="LOG_DIR" value="${LOG_DIR:-/tmp/scx-backend-logs}"/>
     <logger name="ACCESS" level="INFO" additivity="false">
       <appender-ref ref="ACCESS_FILE"/>
       <!-- prod 也输出到控制台，便于 docker logs 查看 -->
