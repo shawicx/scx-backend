@@ -46,9 +46,6 @@ jobs:
   build-and-push:
     name: Build & Push Image
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.meta.outputs.image }}
-      digest: ${{ steps.meta.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -114,7 +111,9 @@ jobs:
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
           ECS_ENV_FILE: ${{ secrets.ECS_ENV_FILE }}
-          IMAGE_URL: ${{ needs.build-and-push.outputs.image }}
+          # 直接用 secrets 拼接镜像名,绕过 job outputs 在 ssh-action envs 透传的不可靠问题
+          # (build-and-push job 推送的 latest 标签与此处完全一致)
+          IMAGE_URL: ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/scx-backend:latest
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
