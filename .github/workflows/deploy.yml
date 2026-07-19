@@ -1,0 +1,184 @@
+# ============================================================
+# @description SCX Backend 自动部署工作流
+# ------------------------------------------------------------
+# 触发条件：
+#   - push 到 main 分支：自动构建镜像 → 推送 ACR → SSH 部署到 ECS
+#   - workflow_dispatch：支持在 GitHub Actions 页面手动触发（紧急重试/回滚）
+#
+# 部署链路：
+#   ./gradlew bootBuildImage → docker tag → docker push (阿里云 ACR)
+#   → SSH 登录 ECS → docker pull → 重启容器 → 健康检查
+#
+# 安全模型：
+#   - 生产秘钥（DB_PASSWORD/JWT_SECRET/MAIL_PASSWORD 等）只存在于
+#     ECS 本地的 .env 文件，通过 docker run --env-file 注入容器
+#   - GitHub 仅保存 ACR 凭证与 ECS SSH 凭证，不保存任何业务秘钥
+#   - --network host：复用宿主网络，使容器内 localhost:5433/6388
+#     直接打通 ECS 上 docker-compose 起的 PG/Redis
+#
+# 依赖的 GitHub Secrets（在仓库 Settings → Secrets and variables 配置）：
+#   ACR_REGISTRY    阿里云 ACR 注册中心地址，如 registry.cn-hangzhou.aliyuncs.com
+#   ACR_NAMESPACE   ACR 命名空间，如 scx
+#   ACR_USERNAME    ACR 登录账号（阿里云账号或 RAM 子账号）
+#   ACR_PASSWORD    ACR 访问凭证（在容器镜像服务控制台设置固定密码）
+#   ECS_HOST        ECS 公网 IP
+#   ECS_USER        SSH 登录用户（如 root / ecs-user）
+#   ECS_SSH_KEY     SSH 私钥完整内容（PEM 格式）
+#   ECS_ENV_FILE    ECS 上生产 .env 文件的绝对路径，如 /opt/scx-backend/.env
+# ============================================================
+
+name: Deploy to Aliyun ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同一分支并发部署时取消旧的，避免重复滚动
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # Job 1：在 GitHub runner 上构建镜像并推送到阿里云 ACR
+  # ============================================================
+  build-and-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.meta.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build OCI image (bootBuildImage)
+        # 使用项目原生 Spring Boot 构建任务（Cloud Native Buildpacks）
+        # 默认镜像名：docker.io/library/scx-backend:0.0.1-SNAPSHOT（由 build.gradle.kts 决定）
+        # 默认 profile：prod（build.gradle.kts 中 bootBuildImage 已配置）
+        run: ./gradlew bootBuildImage --no-daemon
+
+      - name: Login to Aliyun ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_REGISTRY }}" \
+            -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Tag & Push image
+        id: meta
+        env:
+          # bootBuildImage 产出的原始镜像名（与 build.gradle.kts 的 artifactId + version 一致）
+          SOURCE_IMAGE: docker.io/library/scx-backend:0.0.1-SNAPSHOT
+          # 目标镜像仓库：registry.cn-xxx.aliyuncs.com/<namespace>/scx-backend
+          TARGET_REPO: ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/scx-backend
+          # 取 commit 前 7 位作为版本标签，便于审计与回滚
+          SHORT_SHA: ${{ github.sha }}
+        run: |
+          # 短 sha（bash 字符串截取）
+          SHORT="${SHORT_SHA:0:7}"
+
+          # 打 latest 标签（ECS 部署默认拉取此标签）
+          docker tag "$SOURCE_IMAGE" "$TARGET_REPO:latest"
+          # 打 sha 标签（保留历史版本，便于回滚：docker pull <repo>:sha-xxxxxxx）
+          docker tag "$SOURCE_IMAGE" "$TARGET_REPO:sha-$SHORT"
+
+          docker push "$TARGET_REPO:latest"
+          docker push "$TARGET_REPO:sha-$SHORT"
+
+          # 记录推送后的镜像摘要，作为构建产物的可追溯凭证
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$TARGET_REPO:latest" || echo "")
+          echo "image=$TARGET_REPO:latest" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Pushed: $TARGET_REPO:latest (sha-$SHORT)"
+
+  # ============================================================
+  # Job 2：SSH 登录 ECS，拉取新镜像并重启容器
+  # ============================================================
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: SSH deploy & health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          # 长命令（镜像拉取 + 应用启动）需要更长的超时
+          command_timeout: 10m
+          # 把需要的环境变量传到远端 shell
+          envs: ACR_REGISTRY,ACR_NAMESPACE,ACR_USERNAME,ACR_PASSWORD,ECS_ENV_FILE,IMAGE_URL
+          env:
+            ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+            ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
+            ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+            ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+            ECS_ENV_FILE: ${{ secrets.ECS_ENV_FILE }}
+            IMAGE_URL: ${{ needs.build-and-push.outputs.image }}
+          # 远端部署脚本：
+          # 1. 登录 ACR
+          # 2. 拉取最新镜像
+          # 3. 停止并删除旧容器（首次部署容器不存在时容错跳过）
+          # 4. 启动新容器（host 网络 + 自动重启 + 注入本地 .env）
+          # 5. 清理悬空旧镜像，节省磁盘
+          # 6. 健康检查：轮询 /api/health，最多等待 90 秒
+          script: |
+            set -euo pipefail
+
+            IMAGE="$IMAGE_URL"
+            ENV_FILE="$ECS_ENV_FILE"
+
+            echo "==> 校验 .env 文件存在: $ENV_FILE"
+            if [ ! -f "$ENV_FILE" ]; then
+              echo "ERROR: ECS 上的 .env 文件不存在: $ENV_FILE"
+              echo "请先在 ECS 上创建该文件并写入生产环境变量（参考 .env.example）"
+              exit 1
+            fi
+
+            echo "==> 登录阿里云 ACR"
+            docker login "$ACR_REGISTRY" -u "$ACR_USERNAME" -p "$ACR_PASSWORD"
+
+            echo "==> 拉取最新镜像: $IMAGE"
+            docker pull "$IMAGE"
+
+            echo "==> 停止并删除旧容器 scx-backend"
+            docker stop scx-backend 2>/dev/null || true
+            docker rm   scx-backend 2>/dev/null || true
+
+            echo "==> 启动新容器"
+            # --network host  : 复用宿主网络，容器内 localhost:5433/6388 直达 PG/Redis
+            # --restart always: 容器崩溃或 ECS 重启时自动拉起
+            # --env-file      : 注入 ECS 本地 .env（含 DB/JWT/MAIL 等敏感变量）
+            docker run -d \
+              --name scx-backend \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              "$IMAGE"
+
+            echo "==> 清理悬空镜像"
+            docker image prune -f
+
+            echo "==> 健康检查: 轮询 http://localhost:3000/api/health"
+            for i in $(seq 1 18); do
+              if curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "健康检查通过（第 $((i*5)) 秒）"
+                docker ps --filter "name=scx-backend" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                exit 0
+              fi
+              echo "  等待应用启动... ($i/18)"
+              sleep 5
+            done
+
+            echo "ERROR: 健康检查超时（90 秒内未就绪）"
+            echo "--- 容器最近日志 ---"
+            docker logs --tail 80 scx-backend || true
+            exit 1
