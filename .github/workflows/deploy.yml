@@ -108,21 +108,21 @@ jobs:
     steps:
       - name: SSH deploy & health check
         uses: appleboy/ssh-action@v1
+        env:
+          ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+          ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          ECS_ENV_FILE: ${{ secrets.ECS_ENV_FILE }}
+          IMAGE_URL: ${{ needs.build-and-push.outputs.image }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           # 长命令（镜像拉取 + 应用启动）需要更长的超时
           command_timeout: 10m
-          # 把需要的环境变量传到远端 shell
+          # 把需要的环境变量传到远端 shell（与下方 env: 中定义的变量名一一对应）
           envs: ACR_REGISTRY,ACR_NAMESPACE,ACR_USERNAME,ACR_PASSWORD,ECS_ENV_FILE,IMAGE_URL
-          env:
-            ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
-            ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
-            ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-            ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-            ECS_ENV_FILE: ${{ secrets.ECS_ENV_FILE }}
-            IMAGE_URL: ${{ needs.build-and-push.outputs.image }}
           # 远端部署脚本：
           # 1. 登录 ACR
           # 2. 拉取最新镜像
