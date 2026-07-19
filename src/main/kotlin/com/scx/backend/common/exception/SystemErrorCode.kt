@@ -2,9 +2,8 @@ package com.scx.backend.common.exception
 
 /**
  * 系统业务错误码枚举
- * 对标 scx-service: src/common/exceptions/system.exception.ts
  *
- * 注意：源项目另有 AI 错误码段 9500-9509，本项目排除 AI，故不包含。
+ * 注意：不含 AI 相关错误码段（9500-9509），AI 能力不在本项目范围。
  */
 enum class SystemErrorCode(val code: Int, val defaultMessage: String) {
     /** 缺少 token */
@@ -52,7 +51,6 @@ enum class SystemErrorCode(val code: Int, val defaultMessage: String) {
     companion object {
         /**
          * 将业务错误码映射为 HTTP 状态码
-         * 对标 scx-service SystemExceptionFilter.mapToHttpStatus（已去除 AI 分支）
          */
         fun mapToHttpStatus(errorCode: Int): Int = when (errorCode) {
             // 业务规则违反 / 操作失败：HTTP 200（业务层面的失败，非协议错误）

@@ -12,8 +12,9 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
- * 文件实体（对标 scx-service: prisma File model）
- * 注意：文件模块在源项目中是空壳，本实体仅保证 schema 完整，业务逻辑待后续实现。
+ * 文件实体
+ *
+ * 注意：上传与存储业务逻辑暂未实现，本实体仅保证 schema 完整。
  */
 @Entity
 @Table(name = "files")

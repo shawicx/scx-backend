@@ -12,7 +12,7 @@ import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 /**
- * 用户实体（对标 scx-service: prisma User model）
+ * 用户实体
  */
 @Entity
 @Table(name = "users")

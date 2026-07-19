@@ -8,12 +8,11 @@ import org.springframework.data.redis.core.StringRedisTemplate
 
 /**
  * Redis 配置
- * 对标 scx-service: src/modules/cache/cache.module.ts 的客户端工厂
  *
  * StringRedisTemplate 由 Spring Boot 自动配置注入（application.yml 的 spring.data.redis.*），
  * 此处显式声明便于后续扩展（如自定义序列化、连接池等）。
  *
- * 连接/超时/重连策略对标源项目：
+ * 连接/超时/重连策略：
  *  - connectTimeout 10s
  *  - commandTimeout 5s
  *  - Lettuce 默认自带指数退避重连

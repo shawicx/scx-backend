@@ -3,7 +3,7 @@ package com.scx.backend.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * Swagger 文档配置（对标 scx-service 的 swaggerConfig）
+ * Swagger 文档配置
  */
 @ConfigurationProperties(prefix = "swagger")
 data class SwaggerProperties(

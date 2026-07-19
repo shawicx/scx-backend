@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 权限服务
- * 对标 scx-service: src/modules/permission/permission.service.ts
  *
  * 树形权限：MENU(菜单) / BUTTON(按钮)，自引用 parentId，level 自动计算。
  */

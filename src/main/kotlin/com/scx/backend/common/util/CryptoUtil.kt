@@ -7,7 +7,6 @@ import java.security.SecureRandom
 
 /**
  * 加密工具
- * 对标 scx-service: src/common/utils/crypto.util.ts
  *
  * AES-256-CTR 模式，格式 `ivHex:encryptedHex`，与 Node.js crypto.createCipheriv('aes-256-ctr') 互通。
  * 密钥为 32 字节 hex（64 字符）；IV 为 16 字节 hex（32 字符）。

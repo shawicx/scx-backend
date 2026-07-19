@@ -8,7 +8,6 @@ import java.lang.management.ManagementFactory
 
 /**
  * 健康检查服务
- * 对标 scx-service: src/modules/health/health.service.ts
  *
  * 检查 DB（SELECT 1）+ Redis（set/get/del 探针）+ 系统信息。
  * 与 Actuator 的 /api/actuator/health 不同：这是业务侧自定义检查，返回结构化详情。

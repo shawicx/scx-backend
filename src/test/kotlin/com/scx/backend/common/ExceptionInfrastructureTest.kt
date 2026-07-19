@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * 错误码与异常体系单元测试（对标源 SystemErrorCode 全部 14 个码）
+ * 错误码与异常体系单元测试（覆盖 SystemErrorCode 全部 14 个码）
  */
 class ExceptionInfrastructureTest {
 

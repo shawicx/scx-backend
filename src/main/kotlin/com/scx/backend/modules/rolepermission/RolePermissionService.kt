@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 角色-权限关联服务
- * 对标 scx-service: src/modules/role-permission/role-permission.service.ts
  */
 @Service
 class RolePermissionService(

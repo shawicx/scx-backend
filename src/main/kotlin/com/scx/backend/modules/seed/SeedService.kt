@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 种子数据初始化
- * 对标 scx-service: src/modules/seed/seed.service.ts
  *
  * 应用启动时自动创建：
  *  1. SUPER_ADMIN 角色（系统内置）

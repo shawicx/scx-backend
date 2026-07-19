@@ -14,7 +14,8 @@ import org.springframework.test.context.TestPropertySource
 
 /**
  * CacheService 集成测试（依赖真实 Redis 127.0.0.1:6388）
- * 验证所有方法行为与源 scx-service CacheService 一致。
+ *
+ * 验证所有方法的读写、序列化、TTL、异常处理行为。
  */
 @SpringBootTest
 @TestPropertySource(

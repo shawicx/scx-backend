@@ -12,7 +12,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException
 
 /**
  * 全局异常处理
- * 合并对标 scx-service: SystemExceptionFilter + HttpExceptionFilter
  *
  * 处理三类异常：
  * 1. [SystemException] 业务异常 → 业务错误码作为 statusCode，HTTP 状态由映射决定
@@ -25,8 +24,7 @@ class GlobalExceptionHandler {
     private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     /**
-     * 业务异常处理
-     * 对标 SystemExceptionFilter：statusCode 使用业务错误码（非 HTTP 码）
+     * 业务异常处理：statusCode 使用业务错误码（非 HTTP 码）
      */
     @ExceptionHandler(SystemException::class)
     fun handleSystemException(ex: SystemException, request: HttpServletRequest): ResponseEntity<ApiResponse> {
@@ -89,7 +87,6 @@ class GlobalExceptionHandler {
 
     /**
      * 兜底异常处理 → 500
-     * 对标 HttpExceptionFilter 的非 HTTP 异常分支
      */
     @ExceptionHandler(Exception::class)
     fun handleGenericException(ex: Exception, request: HttpServletRequest): ResponseEntity<ApiResponse> {

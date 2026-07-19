@@ -14,7 +14,6 @@ import org.springframework.web.servlet.HandlerInterceptor
 
 /**
  * 鉴权拦截器
- * 对标 scx-service: src/common/guards/auth.guard.ts
  *
  * 在 Handler 解析后执行，能获取方法/类级 @Public 注解：
  *  1. @Public 路由 → 放行
@@ -58,7 +57,7 @@ class AuthInterceptor(
     }
 
     /**
-     * 写入 401 统一响应（对标源 UnauthorizedException）
+     * 写入 401 统一响应
      */
     private fun writeUnauthorized(response: HttpServletResponse, request: HttpServletRequest, message: String) {
         response.status = HttpStatus.UNAUTHORIZED.value()

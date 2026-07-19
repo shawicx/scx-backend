@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 用户-角色关联服务
- * 对标 scx-service: src/modules/user-role/user-role.service.ts
  */
 @Service
 class UserRoleService(

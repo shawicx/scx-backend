@@ -2,45 +2,87 @@ package com.scx.backend.modules.user.dto
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.scx.backend.entity.User
+import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * 用户偏好设置（对标 UserPreferences，排除 AI 子结构）
+ * 用户偏好设置
  */
+@Schema(description = "用户偏好设置")
 data class UserPreferences(
+    @Schema(description = "主题", defaultValue = "light")
     val theme: String? = "light",
+
+    @Schema(description = "语言", defaultValue = "zh-CN")
     val language: String? = "zh-CN",
+
+    @Schema(description = "时区", defaultValue = "Asia/Shanghai")
     val timezone: String? = "Asia/Shanghai",
+
+    @Schema(description = "通知偏好")
     val notifications: NotificationPrefs? = null,
+
+    @Schema(description = "隐私偏好")
     val privacy: PrivacyPrefs? = null,
 ) {
+    @Schema(description = "通知偏好")
     data class NotificationPrefs(
+        @Schema(description = "邮件通知")
         val email: Boolean? = true,
+        @Schema(description = "推送通知")
         val push: Boolean? = true,
+        @Schema(description = "短信通知")
         val sms: Boolean? = false,
     )
 
+    @Schema(description = "隐私偏好")
     data class PrivacyPrefs(
+        @Schema(description = "资料是否可见")
         val profileVisible: Boolean? = true,
+        @Schema(description = "是否展示邮箱")
         val showEmail: Boolean? = false,
+        @Schema(description = "是否展示最后在线时间")
         val showLastSeen: Boolean? = true,
     )
 }
 
 /**
- * 用户响应（对标 UserResponseDto，使用 @Exclude 隐藏 password 等敏感字段）
- * 对标源 ClassSerializerInterceptor 的 @Exclude：password 不输出
+ * 用户信息响应
+ *
+ * 不输出 password 等敏感字段
  */
+@Schema(description = "用户信息响应")
 data class UserResponseDto(
+    @Schema(description = "用户 ID")
     val id: String,
+
+    @Schema(description = "邮箱")
     val email: String,
+
+    @Schema(description = "用户名称")
     val name: String,
+
+    @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,
+
+    @Schema(description = "偏好设置")
     val preferences: JsonNode?,
+
+    @Schema(description = "最后登录 IP")
     val lastLoginIp: String?,
+
+    @Schema(description = "最后登录时间")
     val lastLoginAt: java.time.LocalDateTime?,
+
+    @Schema(description = "登录次数")
     val loginCount: Int,
+
+    @Schema(description = "是否启用")
     val isActive: Boolean,
+
+    @Schema(description = "创建时间")
     val createdAt: java.time.LocalDateTime,
+
+    @Schema(description = "更新时间")
     val updatedAt: java.time.LocalDateTime,
 ) {
     companion object {
@@ -61,15 +103,29 @@ data class UserResponseDto(
 }
 
 /**
- * 登录响应（对标 LoginResponseDto）
+ * 登录响应
  */
+@Schema(description = "登录响应")
 data class LoginResponseDto(
+    @Schema(description = "用户 ID")
     val id: String,
+
+    @Schema(description = "邮箱")
     val email: String,
+
+    @Schema(description = "用户名称")
     val name: String,
+
+    @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,
+
+    @Schema(description = "偏好设置")
     val preferences: JsonNode?,
+
+    @Schema(description = "访问令牌（2 小时有效）")
     val accessToken: String,
+
+    @Schema(description = "刷新令牌（7 天有效）")
     val refreshToken: String,
 ) {
     companion object {
@@ -86,35 +142,67 @@ data class LoginResponseDto(
 }
 
 /**
- * 用户角色关系响应（对标 UserRoleResponseDto）
+ * 用户-角色关系响应
  */
+@Schema(description = "用户-角色关系响应")
 data class UserRoleResponseDto(
+    @Schema(description = "关联记录 ID")
     val id: String,
+
+    @Schema(description = "用户 ID")
     val userId: String,
+
+    @Schema(description = "角色 ID")
     val roleId: String,
+
+    @Schema(description = "创建时间")
     val createdAt: java.time.LocalDateTime,
 )
 
 /**
- * 用户列表项（对标 UserListItemDto）
+ * 用户列表项
  */
+@Schema(description = "用户列表项")
 data class UserListItemDto(
+    @Schema(description = "用户 ID")
     val id: String,
+
+    @Schema(description = "邮箱")
     val email: String,
+
+    @Schema(description = "用户名称")
     val name: String,
+
+    @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,
+
+    @Schema(description = "是否启用")
     val isActive: Boolean,
+
+    @Schema(description = "最后登录时间")
     val lastLoginAt: java.time.LocalDateTime?,
+
+    @Schema(description = "登录次数")
     val loginCount: Int,
+
+    @Schema(description = "创建时间")
     val createdAt: java.time.LocalDateTime,
 )
 
 /**
- * 用户列表响应（对标 UserListResponseDto）
+ * 用户列表响应
  */
+@Schema(description = "用户列表响应")
 data class UserListResponseDto(
+    @Schema(description = "用户列表")
     val list: List<UserListItemDto>,
+
+    @Schema(description = "总数")
     val total: Long,
+
+    @Schema(description = "当前页码")
     val page: Int,
+
+    @Schema(description = "每页条数")
     val limit: Int,
 )

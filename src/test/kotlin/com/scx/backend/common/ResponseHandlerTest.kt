@@ -14,14 +14,14 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
 import org.springframework.http.server.ServletServerHttpRequest
 import org.springframework.http.server.ServletServerHttpResponse
 
 /**
  * GlobalResponseHandler 单元测试
- * 验证成功响应包装逻辑（对标 TransformInterceptor）。
- * 不依赖 Spring 上下文，直接调用 beforeBodyWrite。
+ *
+ * 验证成功响应包装逻辑。不依赖 Spring 上下文，直接调用 beforeBodyWrite。
  */
 class ResponseHandlerTest {
 
@@ -48,7 +48,7 @@ class ResponseHandlerTest {
 
     private val returnType = mock(MethodParameter::class.java)
     private val contentType = MediaType.APPLICATION_JSON
-    private val converterType = MappingJackson2HttpMessageConverter::class.java
+    private val converterType = JacksonJsonHttpMessageConverter::class.java
 
     @Test
     fun `plain object is wrapped with success message and data`() {

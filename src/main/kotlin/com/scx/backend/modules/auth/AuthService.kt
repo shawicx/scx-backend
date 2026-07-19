@@ -14,13 +14,12 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * 认证服务
- * 对标 scx-service: src/modules/auth/auth.service.ts
  *
  * 自研令牌协议（非标准 JWT）：
  *  token = base64(JSON({userId,email,type,timestamp})) + "." + hexHmac
  *
- * 关键兼容性：
- *  - base64 使用标准编码（与 Node Buffer.toString('base64') 一致）
+ * 关键点：
+ *  - base64 使用标准编码
  *  - JSON 字段顺序固定为 userId, email, type, timestamp（用 LinkedHashMap 保序）
  *  - HMAC-SHA256，密钥来自 JWT_SECRET 环境变量
  *  - 单点令牌：Redis 中缓存的令牌必须与请求令牌完全相等

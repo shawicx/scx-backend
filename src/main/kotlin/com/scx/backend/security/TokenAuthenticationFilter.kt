@@ -13,13 +13,10 @@ import org.springframework.web.filter.OncePerRequestFilter
 /**
  * Token 认证过滤器（无状态，仅解析）
  *
- * 对标 scx-service: src/common/guards/auth.guard.ts 的 token 解析部分。
- *
  * 设计说明：
  *  - 本过滤器在 DispatcherServlet 之前执行，无法获取 handler 注解，因此不在此处强制鉴权。
  *  - 若请求携带有效 Bearer token，解析后将用户信息存入 SecurityContext。
- *  - 强制鉴权（401）由 [SecurityConfig] 的 anyRequest().authenticated() 与
- *    [RestAuthenticationEntryPoint] 协同实现；@Public 路由通过 permitAll 放行。
+ *  - 强制鉴权（401）由 [AuthInterceptor] 基于 @Public 注解执行，@Public 路由放行。
  */
 @Component
 class TokenAuthenticationFilter(
@@ -54,7 +51,6 @@ class TokenAuthenticationFilter(
 }
 
 /**
- * SecurityContext 中存储的认证主体
- * 对标源 request.user = { userId, email }
+ * SecurityContext 中存储的认证主体（userId + email）
  */
 data class AuthPrincipal(val userId: String, val email: String)

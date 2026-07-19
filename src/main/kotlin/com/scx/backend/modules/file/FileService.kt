@@ -8,10 +8,8 @@ import org.springframework.stereotype.Service
 
 /**
  * 文件服务（空壳）
- * 对标 scx-service: src/modules/file/file.service.ts
  *
- * 源项目此模块为未实现的 stub（所有方法抛 NotImplementedError）。
- * 本项目保持一致，待后续实现对象存储（OSS/S3/本地）时填充。
+ * 所有方法暂未实现，待后续接入对象存储（OSS/S3/本地）时填充。
  */
 @Service
 class FileService {
@@ -42,7 +40,7 @@ class FileService {
     }
 }
 
-/** 上传的文件数据（对标源 controller 里的 file 对象） */
+/** 上传的文件数据 */
 data class UploadedFile(
     val originalName: String,
     val mimeType: String,

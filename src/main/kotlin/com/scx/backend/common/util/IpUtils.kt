@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest
 
 /**
  * 客户端 IP 工具
- * 对标 scx-service: src/common/utils/ip.util.ts
  */
 object IpUtils {
 

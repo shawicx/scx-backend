@@ -10,9 +10,8 @@ import org.junit.jupiter.api.assertThrows
 
 /**
  * CryptoUtil 单元测试
- * 对标 scx-service: crypto.util.spec（无该文件，按源行为设计）
  *
- * 重点：验证与 Node.js crypto.createCipheriv('aes-256-ctr') 的跨语言互通。
+ * 重点：验证 AES-256-CTR 加解密的正确性与跨语言互通性。
  */
 class CryptoUtilTest {
 

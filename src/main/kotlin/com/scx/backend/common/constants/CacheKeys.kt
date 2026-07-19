@@ -2,7 +2,6 @@ package com.scx.backend.common.constants
 
 /**
  * Redis Key 构造工具，统一管理 key 命名
- * 对标 scx-service: src/common/utils/cache-keys.constants.ts
  */
 object CacheKeys {
 

@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint
 import java.time.LocalDateTime
 
 /**
- * 用户-角色关联实体（对标 scx-service: prisma UserRole model）
+ * 用户-角色关联实体
  */
 @Entity
 @Table(

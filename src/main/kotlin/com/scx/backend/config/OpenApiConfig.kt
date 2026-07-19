@@ -10,10 +10,9 @@ import org.springframework.context.annotation.Configuration
 
 /**
  * OpenAPI 文档配置
- * 对标 scx-service: swagger-document.ts + @nestjs/swagger
  *
  * 自动生成接口文档（默认 /api/v3/api-docs + /api/swagger-ui.html）。
- * 全局 Bearer 认证 scheme（对标源 addBearerAuth）。
+ * 注册全局 Bearer 认证 scheme。
  */
 @Configuration
 class OpenApiConfig(

@@ -2,7 +2,6 @@ package com.scx.backend.common.constants
 
 /**
  * 统一的 TTL 常量（毫秒）
- * 对标 scx-service: src/common/utils/ttl.constants.ts
  */
 object TtlConstants {
     /** Access Token 有效期：2 小时 */

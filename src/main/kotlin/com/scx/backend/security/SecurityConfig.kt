@@ -11,8 +11,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Spring Security 配置
  *
- * 对标 scx-service: AuthGuard 作为全局 Guard。
- *
  * 设计：
  *  - 无状态会话（不创建 HttpSession）
  *  - 关闭 CSRF（无状态 API 不需要）
@@ -30,7 +28,7 @@ class SecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Actuator 端点放行（对标 @Public 的 /api/health 等）
+                // Actuator 端点放行（业务侧由 @Public 的 /api/health 等互补）
                 auth.requestMatchers("/api/actuator/**").permitAll()
                 // Swagger / OpenAPI 文档放行
                 auth.requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**",

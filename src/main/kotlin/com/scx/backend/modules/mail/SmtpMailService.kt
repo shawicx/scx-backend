@@ -15,10 +15,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * SMTP 邮件服务实现
- * 对标 scx-service: src/modules/mail/mail.service.ts
  *
  * 用 JavaMailSender 发送，Thymeleaf 渲染模板。
- * 带超时控制（对标源 sendMailWithTimeout），错误分类（对标源 parseMailError）。
+ * 支持超时控制与错误分类。
  */
 @Service
 @Primary
@@ -114,7 +113,7 @@ class SmtpMailService(
     }
 
     /**
-     * 带超时的发送（对标源 sendMailWithTimeout）
+     * 带超时的发送
      * CompletableFuture.orTimeout 在超时后抛 TimeoutException
      */
     private fun sendWithTimeout(message: MimeMessage) {
@@ -127,7 +126,7 @@ class SmtpMailService(
         }
     }
 
-    /** 错误分类（对标源 parseMailError） */
+    /** 错误分类 */
     private fun parseError(e: Throwable): Pair<String, String> {
         val msg = e.message ?: "未知错误"
         val type = when {

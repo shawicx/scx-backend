@@ -18,12 +18,11 @@ import org.springframework.test.context.TestPropertySource
 
 /**
  * AuthService 集成测试（依赖真实 Redis 127.0.0.1:6388）
- * 对标 scx-service: auth.service.spec.ts
  *
  * 重点验证：
  *  1. 令牌生成/验证/刷新/登出完整流程
  *  2. 单点令牌（Redis 比对）
- *  3. 跨语言兼容：Kotlin 生成的令牌签名算法与 Node 一致
+ *  3. 令牌签名与校验的正确性
  */
 @SpringBootTest
 @TestPropertySource(

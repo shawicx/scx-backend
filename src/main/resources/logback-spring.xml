@@ -44,7 +44,7 @@
         <encoder><pattern>${LOG_PATTERN}</pattern></encoder>
     </appender>
 
-    <!-- 邮件模块独立日志（对标源 LOG_MODULES 的 MailService） -->
+    <!-- 邮件模块独立日志 -->
     <appender name="MAIL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/mail/mail.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 
 /**
  * 统一响应封装
- * 对标 scx-service: TransformInterceptor 的成功响应格式
  *
  * 成功：success=true，statusCode 为 HTTP 状态码
  * 失败：由 GlobalExceptionHandler 构造，success=false，statusCode 为业务错误码

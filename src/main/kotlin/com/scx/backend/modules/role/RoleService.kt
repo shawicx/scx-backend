@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 角色服务
- * 对标 scx-service: src/modules/role/role.service.ts
  */
 @Service
 class RoleService(

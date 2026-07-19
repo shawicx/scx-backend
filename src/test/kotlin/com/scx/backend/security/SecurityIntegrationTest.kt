@@ -16,7 +16,6 @@ import java.net.http.HttpResponse
 
 /**
  * 安全层集成测试
- * 对标 scx-service: auth.integration.spec.ts
  *
  * 验证完整鉴权链：TokenAuthenticationFilter + AuthInterceptor + @Public
  * 用 JDK 原生 HttpClient 发起真实 HTTP 请求（无第三方测试依赖，Boot 4 环境最稳）。

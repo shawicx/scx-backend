@@ -13,7 +13,8 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
- * 权限实体（对标 scx-service: prisma Permission model）
+ * 权限实体
+ *
  * 树形结构：MENU(菜单) / BUTTON(按钮)，通过 parentId 自引用
  */
 @Entity

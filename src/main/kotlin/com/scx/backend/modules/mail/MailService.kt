@@ -2,9 +2,10 @@ package com.scx.backend.modules.mail
 
 /**
  * 邮件服务接口
- * 对标 scx-service: src/modules/mail/mail.service.ts
  *
- * Step 6 为 stub 实现，Step 9 替换为 SmtpMailService（Thymeleaf 模板 + JavaMailSender）。
+ * 实现由 mail.enabled 控制：
+ *  - false：使用 StubMailService（不真实发信）
+ *  - true：使用 SmtpMailService（Thymeleaf 模板 + JavaMailSender）
  */
 interface MailService {
 
@@ -39,7 +40,7 @@ interface MailService {
      */
     fun testConnection(): SendResult
 
-    /** 发送结果（对标源 VerificationCodeResult / MailSendResult） */
+    /** 发送结果 */
     data class SendResult(
         val success: Boolean,
         val message: String,

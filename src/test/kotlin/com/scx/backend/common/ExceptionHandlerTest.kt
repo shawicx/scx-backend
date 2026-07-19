@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus
 
 /**
  * GlobalExceptionHandler 单元测试
- * 验证 SystemException → 业务码 + HTTP 状态的映射（对标 SystemExceptionFilter）。
+ * 验证 SystemException → 业务码 + HTTP 状态的映射。
  */
 class ExceptionHandlerTest {
 

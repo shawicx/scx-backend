@@ -43,6 +43,7 @@ bin/
 .DS_Store
 
 docs/superpowers
+.zcode
 
 ### Kotlin / Spring Boot 运行时 ###
 .env

@@ -9,7 +9,6 @@ import org.springframework.web.servlet.HandlerInterceptor
 
 /**
  * 访问日志拦截器
- * 对标 scx-service: src/common/interceptors/logging.interceptor.ts
  *
  * 记录每个请求的方法、URL、IP、UA、耗时、状态码。
  * 敏感字段脱敏：headers 的 authorization/cookie/x-api-key；不记录请求体（避免 IO 与脱敏复杂度）。

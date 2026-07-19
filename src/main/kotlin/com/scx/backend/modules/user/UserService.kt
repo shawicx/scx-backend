@@ -44,7 +44,6 @@ import java.time.LocalDateTime
 
 /**
  * 用户服务
- * 对标 scx-service: src/modules/user/user.service.ts
  */
 @Service
 class UserService(
@@ -378,7 +377,7 @@ class UserService(
     // ============ 私有方法 ============
 
     private fun validateEmailCode(email: String, code: String): Boolean {
-        // get 可能返回被 JSON 解析为数字的值，用 toString() 统一处理（对标源 String() 转换）
+        // get 可能返回被 JSON 解析为数字的值，用 toString() 统一处理
         val cached = cacheService.get<Any>(CacheKeys.emailVerification(email))?.toString() ?: return false
         if (cached.trim() != code.trim()) return false
         cacheService.del(CacheKeys.emailVerification(email))

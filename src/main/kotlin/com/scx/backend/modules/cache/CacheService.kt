@@ -8,10 +8,9 @@ import java.time.Duration
 
 /**
  * 缓存服务
- * 对标 scx-service: src/modules/cache/cache.service.ts
  *
  * 封装 Redis 常用操作，get 自动尝试 JSON.parse。
- * 所有方法在异常时记录日志并抛出 RuntimeException（对标源项目 throw new Error）。
+ * 所有方法在异常时记录日志并抛出 RuntimeException。
  */
 @Service
 class CacheService(
@@ -44,7 +43,6 @@ class CacheService(
 
     /**
      * 设置缓存值（毫秒级 TTL）
-     * 对标源项目 setWithMilliseconds / pSetEx
      */
     fun setWithMilliseconds(key: String, value: Any?, ttlMilliseconds: Long) {
         try {
@@ -61,6 +59,7 @@ class CacheService(
      * 获取缓存值，自动尝试 JSON.parse（失败返回原始字符串）
      * @return 缓存值（解析后的对象或字符串），键不存在返回 null
      */
+    @Suppress("UNCHECKED_CAST")  // 泛型擦除导致，由调用方保证类型安全
     fun <T> get(key: String): T? {
         try {
             val value = redisTemplate.opsForValue().get(key)

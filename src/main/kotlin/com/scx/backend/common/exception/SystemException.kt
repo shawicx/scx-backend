@@ -2,7 +2,6 @@ package com.scx.backend.common.exception
 
 /**
  * 系统业务异常类
- * 对标 scx-service: src/common/exceptions/system.exception.ts
  *
  * 通过伴生对象的静态工厂方法构造，保留 [data] 附加信息。
  */

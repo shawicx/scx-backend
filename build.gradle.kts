@@ -62,7 +62,12 @@ dependencies {
 
 kotlin {
     compilerOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
+        freeCompilerArgs = listOf(
+            "-Xjsr305=strict",
+            // Kotlin 2.2：未显式指定目标的注解（如 @Schema）默认仅作用于 value 参数。
+            // 开启后同时应用到参数与属性，消除 KT-73255 警告，并保证 Spring/校验注解行为符合预期。
+            "-Xannotation-default-target=param-property",
+        )
     }
 }
 

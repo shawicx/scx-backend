@@ -11,9 +11,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice
 
 /**
  * 统一响应包装
- * 对标 scx-service: TransformInterceptor
  *
- * 规则（与源项目一致）：
+ * 规则：
  * 1. 若 body 已是 [ApiResponse]（异常处理器或手动构造），原样返回不重复包装
  * 2. 若 body 是 Map 且含 "message" 键：提取 message 作为响应消息；
  *    若除 message 外无其他字段，data=null；否则 data 为剩余字段
@@ -52,7 +51,7 @@ class GlobalResponseHandler : ResponseBodyAdvice<Any> {
 
         val status = (response as ServletServerHttpResponse).servletResponse.status
 
-        // 处理含 message 字段的对象（对标源项目 TransformInterceptor 的 message 提取逻辑）
+        // 处理含 message 字段的对象（提取 message 作为响应消息，剩余字段作为 data）
         if (body is Map<*, *>) {
             val message = body["message"]
             if (message is String) {

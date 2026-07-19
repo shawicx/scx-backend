@@ -9,7 +9,7 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
- * 角色实体（对标 scx-service: prisma Role model）
+ * 角色实体
  */
 @Entity
 @Table(name = "roles")

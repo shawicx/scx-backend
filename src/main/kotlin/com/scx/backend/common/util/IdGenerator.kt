@@ -1,6 +1,5 @@
 package com.scx.backend.common.util
 
-import org.springframework.stereotype.Component
 import java.security.SecureRandom
 
 /**
@@ -10,8 +9,10 @@ import java.security.SecureRandom
  * 全项目统一使用 ULID 作为实体主键。
  *
  * 结构：时间戳(10 字符) + 随机(16 字符)
+ *
+ * 作为 Kotlin object 单例使用，通过 IdGenerator.nextId() 静态调用，
+ * 无需 Spring 容器管理。
  */
-@Component
 object IdGenerator {
     private val ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray()
     private val random = SecureRandom()
