@@ -9,6 +9,7 @@ import com.scx.backend.modules.mail.dto.SendWelcomeEmailDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "邮件服务", description = "验证码、欢迎、密码重置及自定义 HTML 邮件的发送")
 @RestController
-@RequestMapping("/mail")
+@RequestMapping("/mail", produces = [MediaType.APPLICATION_JSON_VALUE])
 class MailController(
     private val mailService: MailService,
 ) {

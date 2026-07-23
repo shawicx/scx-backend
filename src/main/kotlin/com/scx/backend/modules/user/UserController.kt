@@ -2,23 +2,7 @@ package com.scx.backend.modules.user
 
 import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.util.IpUtils
-import com.scx.backend.modules.user.dto.AssignRoleDto
-import com.scx.backend.modules.user.dto.AssignRolesDto
-import com.scx.backend.modules.user.dto.CountResultDto
-import com.scx.backend.modules.user.dto.CreateUserDto
-import com.scx.backend.modules.user.dto.DeleteUsersDto
-import com.scx.backend.modules.user.dto.LoginResponseDto
-import com.scx.backend.modules.user.dto.LoginUserDto
-import com.scx.backend.modules.user.dto.LoginWithPasswordDto
-import com.scx.backend.modules.user.dto.MessageDto
-import com.scx.backend.modules.user.dto.QueryUsersDto
-import com.scx.backend.modules.user.dto.RefreshTokenDto
-import com.scx.backend.modules.user.dto.RegisterUserDto
-import com.scx.backend.modules.user.dto.SendCodeDto
-import com.scx.backend.modules.user.dto.ToggleUserStatusDto
-import com.scx.backend.modules.user.dto.UserListResponseDto
-import com.scx.backend.modules.user.dto.UserResponseDto
-import com.scx.backend.modules.user.dto.UserRoleResponseDto
+import com.scx.backend.modules.user.dto.*
 import com.scx.backend.security.Admin
 import com.scx.backend.security.AuthPrincipal
 import io.swagger.v3.oas.annotations.Operation
@@ -26,15 +10,9 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 /**
  * 用户控制器
@@ -43,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "用户管理", description = "用户注册、登录、角色分配与用户管理")
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/users", produces = [MediaType.APPLICATION_JSON_VALUE])
 class UserController(
     private val userService: UserService,
 ) {
@@ -64,7 +42,10 @@ class UserController(
     @Public
     @Operation(summary = "密码登录", description = "使用邮箱与前端加密后的密码登录，需先获取加密密钥")
     @PostMapping("/login-password")
-    fun loginWithPassword(@Valid @RequestBody dto: LoginWithPasswordDto, request: HttpServletRequest): LoginResponseDto =
+    fun loginWithPassword(
+        @Valid @RequestBody dto: LoginWithPasswordDto,
+        request: HttpServletRequest
+    ): LoginResponseDto =
         userService.loginWithPassword(dto, IpUtils.getClientIp(request))
 
     @Public

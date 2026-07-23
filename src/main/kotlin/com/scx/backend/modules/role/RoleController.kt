@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "角色管理", description = "角色的创建、查询、更新、删除及权限分配")
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("/roles", produces = [MediaType.APPLICATION_JSON_VALUE])
 class RoleController(
     private val roleService: RoleService,
 ) {

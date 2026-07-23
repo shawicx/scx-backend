@@ -27,6 +27,8 @@ class AdminInterceptor(
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         if (handler !is HandlerMethod) return true
+        // 放行 CORS 预检请求（OPTIONS），由 Security 层 CorsFilter 处理跨域头
+        if (request.method == "OPTIONS") return true
         val isAdminRequired = handler.hasMethodAnnotation(Admin::class.java) ||
             handler.beanType.isAnnotationPresent(Admin::class.java)
         if (!isAdminRequired) return true

@@ -31,6 +31,11 @@ class AuthInterceptor(
             return true
         }
 
+        // 0. 放行 CORS 预检请求（OPTIONS），由 Security 层 CorsFilter 处理跨域头
+        if (request.method == "OPTIONS") {
+            return true
+        }
+
         // 0. 放行 Swagger / OpenAPI 文档端点（免鉴权）
         val uri = request.requestURI
         if (uri.startsWith("/api/swagger-ui") || uri.startsWith("/api/v3/api-docs") ||

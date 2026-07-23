@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "权限管理", description = "权限（菜单/按钮）的增删改查、权限树及菜单树构建")
 @RestController
-@RequestMapping("/permissions")
+@RequestMapping("/permissions", produces = [MediaType.APPLICATION_JSON_VALUE])
 class PermissionController(
     private val permissionService: PermissionService,
 ) {

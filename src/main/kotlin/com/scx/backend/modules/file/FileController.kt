@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "文件管理", description = "文件查询、详情与批量删除（上传暂未实现）")
 @RestController
-@RequestMapping("/files")
+@RequestMapping("/files", produces = [MediaType.APPLICATION_JSON_VALUE])
 class FileController(
     private val fileService: FileService,
 ) {

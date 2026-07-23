@@ -7,7 +7,9 @@
 #
 # 部署链路：
 #   ./gradlew bootBuildImage → docker tag → docker push (阿里云 ACR)
-#   → SSH 登录 ECS → docker pull → 重启容器 → 健康检查
+#   → SSH 登录 ECS → docker pull
+#   → 幂等启动 PostgreSQL + Redis → 等待 PG 就绪
+#   → 重启应用容器 → 健康检查
 #
 # 安全模型：
 #   - 生产秘钥（DB_PASSWORD/JWT_SECRET/MAIL_PASSWORD 等）只存在于
@@ -123,12 +125,15 @@ jobs:
           # 把需要的环境变量传到远端 shell（与下方 env: 中定义的变量名一一对应）
           envs: ACR_REGISTRY,ACR_NAMESPACE,ACR_USERNAME,ACR_PASSWORD,ECS_ENV_FILE,IMAGE_URL
           # 远端部署脚本：
-          # 1. 登录 ACR
-          # 2. 拉取最新镜像
-          # 3. 停止并删除旧容器（首次部署容器不存在时容错跳过）
-          # 4. 启动新容器（host 网络 + 自动重启 + 注入本地 .env）
-          # 5. 清理悬空旧镜像，节省磁盘
-          # 6. 健康检查：轮询 /api/health，最多等待 90 秒
+          # 1. 校验 ECS 本地 .env 文件存在
+          # 2. 登录 ACR
+          # 3. 拉取最新应用镜像
+          # 4. 幂等启动 PostgreSQL + Redis 依赖容器（首次创建，后续跳过）
+          # 5. 等待 PostgreSQL 就绪（pg_isready 轮询）
+          # 6. 停止并删除旧应用容器（首次部署容器不存在时容错跳过）
+          # 7. 启动新应用容器（host 网络 + 自动重启 + 注入本地 .env）
+          # 8. 清理悬空旧镜像，节省磁盘
+          # 9. 健康检查：轮询 /api/health，最多等待 90 秒
           script: |
             set -euo pipefail
 
@@ -147,6 +152,69 @@ jobs:
 
             echo "==> 拉取最新镜像: $IMAGE"
             docker pull "$IMAGE"
+
+            # ============================================================
+            # 确保依赖容器（PostgreSQL + Redis）运行
+            # ------------------------------------------------------------
+            # 幂等：容器存在则 docker start（对运行中容器是空操作），
+            #       不存在则 docker run 创建。多次部署绝不重建容器、不丢数据。
+            # 配置完全镜像项目 docker-compose.yml（端口/账号/库/版本一致）。
+            # ============================================================
+            echo "==> 确保依赖容器（PostgreSQL + Redis）运行"
+
+            # PostgreSQL
+            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-postgres$'; then
+              echo "  PostgreSQL 容器已存在，确保运行中"
+              docker start scx-backend-postgres >/dev/null 2>&1 || true
+            else
+              echo "  PostgreSQL 容器不存在，创建并启动"
+              # 注意：POSTGRES_PASSWORD / POSTGRES_DB 仅在数据卷首次初始化时生效，
+              # 后续修改这些环境变量不会改变已初始化的数据库密码或库名。
+              # 如需修改密码，必须先删除数据卷 scx-backend-postgres-data 重新初始化。
+              docker run -d \
+                --name scx-backend-postgres \
+                --network host \
+                --restart unless-stopped \
+                -e POSTGRES_USER=scx \
+                -e POSTGRES_PASSWORD=scx_password \
+                -e POSTGRES_DB=scx-backend \
+                -v scx-backend-postgres-data:/var/lib/postgresql/data \
+                postgres:16-alpine \
+                postgres -c port=5433
+            fi
+
+            # Redis
+            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-redis$'; then
+              echo "  Redis 容器已存在，确保运行中"
+              docker start scx-backend-redis >/dev/null 2>&1 || true
+            else
+              echo "  Redis 容器不存在，创建并启动"
+              docker run -d \
+                --name scx-backend-redis \
+                --network host \
+                --restart unless-stopped \
+                -v scx-backend-redis-data:/data \
+                redis:7-alpine \
+                redis-server --port 6388
+            fi
+
+            # 等待 PostgreSQL 就绪
+            # PG 首次初始化（建库、建角色）需要数秒到数十秒，不等的话应用启动会连接失败。
+            echo "==> 等待 PostgreSQL 就绪（最长 60 秒）"
+            for i in $(seq 1 30); do
+              if docker exec scx-backend-postgres pg_isready -U scx -p 5433 >/dev/null 2>&1; then
+                echo "  PostgreSQL 就绪"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "ERROR: PostgreSQL 60 秒内未就绪，终止部署"
+                echo "--- PostgreSQL 容器最近日志 ---"
+                docker logs --tail 30 scx-backend-postgres || true
+                exit 1
+              fi
+              echo "  等待 PG... ($i/30)"
+              sleep 2
+            done
 
             echo "==> 停止并删除旧容器 scx-backend"
             docker stop scx-backend 2>/dev/null || true
