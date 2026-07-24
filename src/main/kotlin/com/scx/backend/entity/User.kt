@@ -1,6 +1,5 @@
 package com.scx.backend.entity
 
-import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -42,7 +41,7 @@ class User(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preferences", columnDefinition = "jsonb")
-    var preferences: JsonNode? = null,
+    var preferences: UserPreferences? = null,
 
     @Column(name = "\"lastLoginIp\"", length = 45)
     var lastLoginIp: String? = null,

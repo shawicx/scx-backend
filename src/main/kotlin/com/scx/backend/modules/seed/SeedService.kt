@@ -1,9 +1,9 @@
 package com.scx.backend.modules.seed
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.entity.Role
 import com.scx.backend.entity.User
+import com.scx.backend.entity.UserPreferences
 import com.scx.backend.entity.UserRole
 import com.scx.backend.repository.RoleRepository
 import com.scx.backend.repository.UserRepository
@@ -30,7 +30,6 @@ class SeedService(
     private val roleRepository: RoleRepository,
     private val userRepository: UserRepository,
     private val userRoleRepository: UserRoleRepository,
-    private val objectMapper: ObjectMapper,
     @Value("\${admin.initial-password:changeme123}") private val initialPassword: String,
 ) : ApplicationRunner {
 
@@ -88,7 +87,15 @@ class SeedService(
         }
     }
 
-    private fun defaultPreferences() = objectMapper.readTree(
-        """{"theme":"light","language":"zh-CN","timezone":"Asia/Shanghai","notifications":{"email":true,"push":true,"sms":false},"privacy":{"profileVisible":true,"showEmail":false,"showLastSeen":true}}""",
+    /**
+     * @description 构造默认的用户偏好设置（与 UserService.defaultPreferences 保持一致）
+     * @returns UserPreferences 默认偏好
+     */
+    private fun defaultPreferences(): UserPreferences = UserPreferences(
+        theme = "light",
+        language = "zh-CN",
+        timezone = "Asia/Shanghai",
+        notifications = UserPreferences.NotificationPrefs(email = true, push = true, sms = false),
+        privacy = UserPreferences.PrivacyPrefs(profileVisible = true, showEmail = false, showLastSeen = true),
     )
 }

@@ -1,6 +1,5 @@
 package com.scx.backend.modules.user
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.constants.TtlConstants
@@ -8,6 +7,7 @@ import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.CryptoUtil
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.entity.User
+import com.scx.backend.entity.UserPreferences
 import com.scx.backend.entity.UserRole
 import com.scx.backend.modules.auth.AuthService
 import com.scx.backend.modules.auth.EncryptionKey
@@ -391,13 +391,31 @@ class UserService(
         return true
     }
 
-    private fun defaultPreferences(): JsonNode = objectMapper.readTree(
-        """{"theme":"light","language":"zh-CN","timezone":"Asia/Shanghai","notifications":{"email":true,"push":true,"sms":false},"privacy":{"profileVisible":true,"showEmail":false,"showLastSeen":true}}""",
+    /**
+     * @description 构造默认的用户偏好设置
+     * @returns UserPreferences 默认偏好（主题/语言/时区/通知/隐私均为约定值）
+     *
+     * @example val prefs = defaultPreferences()
+     */
+    private fun defaultPreferences(): UserPreferences = UserPreferences(
+        theme = "light",
+        language = "zh-CN",
+        timezone = "Asia/Shanghai",
+        notifications = UserPreferences.NotificationPrefs(email = true, push = true, sms = false),
+        privacy = UserPreferences.PrivacyPrefs(profileVisible = true, showEmail = false, showLastSeen = true),
     )
 
-    private fun mergePreferences(existing: JsonNode?, patch: Map<String, Any?>): JsonNode {
-        val merged = objectMapper.convertValue(existing ?: defaultPreferences(), Map::class.java).toMutableMap()
-        merged.putAll(patch.filterValues { it != null })
-        return objectMapper.valueToTree(merged)
+    /**
+     * @description 浅合并用户偏好：以已有偏好（或默认值）为基线，用 patch 覆盖同名字段
+     * @param existing 现有偏好（为 null 时使用默认偏好）
+     * @param patch 待覆盖的字段映射（null 值会被过滤）
+     * @returns UserPreferences 合并后的偏好设置
+     *
+     * @example val merged = mergePreferences(user.preferences, mapOf("theme" to "dark"))
+     */
+    private fun mergePreferences(existing: UserPreferences?, patch: Map<String, Any?>): UserPreferences {
+        val base = objectMapper.convertValue(existing ?: defaultPreferences(), Map::class.java).toMutableMap()
+        base.putAll(patch.filterValues { it != null })
+        return objectMapper.convertValue(base, UserPreferences::class.java)
     }
 }

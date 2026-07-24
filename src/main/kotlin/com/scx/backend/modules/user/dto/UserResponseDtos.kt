@@ -1,49 +1,8 @@
 package com.scx.backend.modules.user.dto
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.scx.backend.entity.User
+import com.scx.backend.entity.UserPreferences
 import io.swagger.v3.oas.annotations.media.Schema
-
-/**
- * 用户偏好设置
- */
-@Schema(description = "用户偏好设置")
-data class UserPreferences(
-    @Schema(description = "主题", defaultValue = "light")
-    val theme: String? = "light",
-
-    @Schema(description = "语言", defaultValue = "zh-CN")
-    val language: String? = "zh-CN",
-
-    @Schema(description = "时区", defaultValue = "Asia/Shanghai")
-    val timezone: String? = "Asia/Shanghai",
-
-    @Schema(description = "通知偏好")
-    val notifications: NotificationPrefs? = null,
-
-    @Schema(description = "隐私偏好")
-    val privacy: PrivacyPrefs? = null,
-) {
-    @Schema(description = "通知偏好")
-    data class NotificationPrefs(
-        @Schema(description = "邮件通知")
-        val email: Boolean? = true,
-        @Schema(description = "推送通知")
-        val push: Boolean? = true,
-        @Schema(description = "短信通知")
-        val sms: Boolean? = false,
-    )
-
-    @Schema(description = "隐私偏好")
-    data class PrivacyPrefs(
-        @Schema(description = "资料是否可见")
-        val profileVisible: Boolean? = true,
-        @Schema(description = "是否展示邮箱")
-        val showEmail: Boolean? = false,
-        @Schema(description = "是否展示最后在线时间")
-        val showLastSeen: Boolean? = true,
-    )
-}
 
 /**
  * 用户信息响应
@@ -65,7 +24,7 @@ data class UserResponseDto(
     val emailVerified: Boolean,
 
     @Schema(description = "偏好设置")
-    val preferences: JsonNode?,
+    val preferences: UserPreferences?,
 
     @Schema(description = "最后登录 IP")
     val lastLoginIp: String?,
@@ -120,7 +79,7 @@ data class LoginResponseDto(
     val emailVerified: Boolean,
 
     @Schema(description = "偏好设置")
-    val preferences: JsonNode?,
+    val preferences: UserPreferences?,
 
     @Schema(description = "访问令牌（2 小时有效）")
     val accessToken: String,
