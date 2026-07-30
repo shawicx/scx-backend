@@ -1,102 +1,65 @@
+// ============================================================
+// scx-backend 根构建脚本（多模块）
+// ============================================================
+// 根项目本身不含源码，仅统一声明：
+//  - 插件版本（应用到子模块）
+//  - 公共仓库
+//  - 子模块公共依赖（Kotlin / Spring BOM / Jackson）
+//  - 编译器选项与测试配置
+// ============================================================
+
 plugins {
     kotlin("jvm") version "2.2.20"
-    kotlin("plugin.spring") version "2.2.20"
-    kotlin("plugin.jpa") version "2.2.20"
-    id("org.springframework.boot") version "4.0.7"
-    // Spring Boot 4.0 起，spring-boot-gradle-plugin 自带依赖管理（原生 BOM），
-    // 不再需要 io.spring.dependency-management 插件。
+    kotlin("plugin.spring") version "2.2.20" apply false
+    kotlin("plugin.jpa") version "2.2.20" apply false
+    id("org.springframework.boot") version "4.0.7" apply false
 }
 
 group = "com.scx"
 version = "0.0.1-SNAPSHOT"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
 
 repositories {
     mavenCentral()
     gradlePluginPortal()
 }
 
-dependencies {
+// 所有子模块共享的基础配置
+subprojects {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    // 纯 Kotlin 库模块（common）仅应用 jvm；Spring 模块由各自构建文件应用额外插件
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+
     // Spring Boot 4.0：用 Gradle 原生 BOM platform 管理依赖版本（替代已废弃的
     // io.spring.dependency-management 插件）。后续 starter 不必再写版本号。
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:4.0.7"))
-
-    // Spring Boot 基础
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-mail")
-    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-
-    // Jackson Kotlin 支持
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
-    // OpenAPI 文档（springdoc 3.x 支持 Spring Boot 4）
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
-
-    // 数据库
-    runtimeOnly("org.postgresql:postgresql")
-    // Spring Boot 4.0 将 Flyway 自动配置拆分为独立模块 spring-boot-flyway，
-    // 仅引入 flyway-core 不会触发自动迁移。必须同时引入此模块。
-    implementation("org.springframework.boot:spring-boot-flyway")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
-
-    // 工具
-    implementation("org.bouncycastle:bcprov-jdk18on:1.80") // AES/HMAC 加密工具预留
-
-    // 测试
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testRuntimeOnly("com.h2database:h2")
-}
-
-kotlin {
-    compilerOptions {
-        freeCompilerArgs = listOf(
-            "-Xjsr305=strict",
-            // Kotlin 2.2：未显式指定目标的注解（如 @Schema）默认仅作用于 value 参数。
-            // 开启后同时应用到参数与属性，消除 KT-73255 警告，并保证 Spring/校验注解行为符合预期。
-            "-Xannotation-default-target=param-property",
-        )
+    dependencies {
+        implementation(platform("org.springframework.boot:spring-boot-dependencies:4.0.7"))
     }
-}
 
-allOpen {
-    annotation("jakarta.persistence.Entity")
-    annotation("jakarta.persistence.MappedSuperclass")
-    annotation("jakarta.persistence.Embeddable")
-}
+    // Java/Kotlin 工具链统一
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
+    // Kotlin 编译器统一选项
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs = listOf(
+                "-Xjsr305=strict",
+                // Kotlin 2.2：未显式指定目标的注解（如 @Schema）默认仅作用于 value 参数。
+                // 开启后同时应用到参数与属性，消除 KT-73255 警告。
+                "-Xannotation-default-target=param-property",
+            )
+        }
+    }
 
-// ============================================================
-// 环境配置自动匹配
-// ============================================================
-// - bootRun（本地运行）：默认 dev profile
-// - 环境变量通过 systemProperty 透传给 JVM（绕开 Gradle daemon 不读新 export 的问题）
-//   这样 `export MAIL_HOST=xxx && ./gradlew bootRun` 能生效
-// ============================================================
-
-tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    // 仅设置默认 profile；环境变量统一由 .env 文件 + spring-dotenv 加载，
-    // IDEA / bootRun / java -jar / Docker 四种启动方式读取逻辑完全一致。
-    val profile = System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev"
-    args = listOf("--spring.profiles.active=$profile")
-}
-
-// 构建打包时，在 jar 内置 prod 为默认 profile
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
-    environment = mapOf("SPRING_PROFILES_ACTIVE" to "prod")
+    // 测试统一用 JUnit Platform
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
 }

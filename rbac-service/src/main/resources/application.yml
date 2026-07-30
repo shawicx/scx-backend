@@ -1,0 +1,24 @@
+# rbac-service 配置（骨架，Step 4 迁入完整配置）
+spring:
+  application:
+    name: scx-rbac
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import: "optional:file:.env[.properties]"
+
+server:
+  port: ${RBAC_PORT:3002}
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: DEBUG

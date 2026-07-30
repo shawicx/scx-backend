@@ -1,0 +1,22 @@
+# Gateway 服务配置（骨架，Step 6 填充路由与鉴权）
+spring:
+  application:
+    name: scx-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import: "optional:file:.env[.properties]"
+
+server:
+  port: ${GATEWAY_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: DEBUG

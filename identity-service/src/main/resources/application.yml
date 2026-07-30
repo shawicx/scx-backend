@@ -1,0 +1,24 @@
+# identity-service 配置（骨架，Step 5 迁入完整配置）
+spring:
+  application:
+    name: scx-identity
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import: "optional:file:.env[.properties]"
+
+server:
+  port: ${IDENTITY_PORT:3001}
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: DEBUG
