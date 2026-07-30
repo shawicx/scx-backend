@@ -1,9 +1,9 @@
-package com.scx.backend.modules.role
+package com.scx.backend.rbac.role
 
-import com.scx.backend.modules.role.dto.AssignPermissionsDto
-import com.scx.backend.modules.role.dto.CreateRoleDto
-import com.scx.backend.modules.role.dto.RoleResponseDto
-import com.scx.backend.modules.role.dto.UpdateRoleDto
+import com.scx.backend.rbac.role.dto.AssignPermissionsDto
+import com.scx.backend.rbac.role.dto.CreateRoleDto
+import com.scx.backend.rbac.role.dto.RoleResponseDto
+import com.scx.backend.rbac.role.dto.UpdateRoleDto
 import com.scx.backend.common.dto.MessageDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

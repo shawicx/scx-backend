@@ -1,4 +1,4 @@
-package com.scx.backend.entity
+package com.scx.backend.rbac.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -37,9 +37,8 @@ class Role(
     @Column(name = "\"updatedAt\"", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 ) {
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    val userRoles: MutableList<UserRole> = mutableListOf()
-
+    // 注：原单体中 Role 还有 @OneToMany userRoles（引用 UserRole）。
+    // 微服务化后 user_roles 归 identity 服务，该跨服务关联在 rbac 中移除。
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     val rolePermissions: MutableList<RolePermission> = mutableListOf()
 }

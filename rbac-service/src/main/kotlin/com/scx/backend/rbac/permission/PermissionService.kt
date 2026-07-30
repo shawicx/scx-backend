@@ -1,16 +1,16 @@
-package com.scx.backend.modules.permission
+package com.scx.backend.rbac.permission
 
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
-import com.scx.backend.entity.Permission
-import com.scx.backend.modules.permission.dto.CreatePermissionDto
-import com.scx.backend.modules.permission.dto.PermissionMenuTreeDto
-import com.scx.backend.modules.permission.dto.PermissionQueryDto
-import com.scx.backend.modules.permission.dto.PermissionResponseDto
-import com.scx.backend.modules.permission.dto.PermissionTreeResponseDto
-import com.scx.backend.modules.permission.dto.UpdatePermissionDto
-import com.scx.backend.repository.PermissionRepository
-import com.scx.backend.repository.RolePermissionRepository
+import com.scx.backend.rbac.entity.Permission
+import com.scx.backend.rbac.permission.dto.CreatePermissionDto
+import com.scx.backend.rbac.permission.dto.PermissionMenuTreeDto
+import com.scx.backend.rbac.permission.dto.PermissionQueryDto
+import com.scx.backend.rbac.permission.dto.PermissionResponseDto
+import com.scx.backend.rbac.permission.dto.PermissionTreeResponseDto
+import com.scx.backend.rbac.permission.dto.UpdatePermissionDto
+import com.scx.backend.rbac.repository.PermissionRepository
+import com.scx.backend.rbac.repository.RolePermissionRepository
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest

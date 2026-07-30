@@ -1,9 +1,9 @@
-package com.scx.backend.modules.permission
+package com.scx.backend.rbac.permission
 
-import com.scx.backend.modules.permission.dto.CreatePermissionDto
-import com.scx.backend.modules.permission.dto.PermissionQueryDto
-import com.scx.backend.modules.permission.dto.PermissionResponseDto
-import com.scx.backend.modules.permission.dto.UpdatePermissionDto
+import com.scx.backend.rbac.permission.dto.CreatePermissionDto
+import com.scx.backend.rbac.permission.dto.PermissionQueryDto
+import com.scx.backend.rbac.permission.dto.PermissionResponseDto
+import com.scx.backend.rbac.permission.dto.UpdatePermissionDto
 import com.scx.backend.common.dto.MessageDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

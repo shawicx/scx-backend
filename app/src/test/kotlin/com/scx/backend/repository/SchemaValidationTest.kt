@@ -1,6 +1,7 @@
 package com.scx.backend.repository
 
-import com.scx.backend.entity.Role
+import com.scx.backend.rbac.entity.Role
+import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.entity.User
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -1,11 +1,11 @@
 package com.scx.backend.modules.seed
 
 import com.scx.backend.common.util.IdGenerator
-import com.scx.backend.entity.Role
+import com.scx.backend.rbac.entity.Role
 import com.scx.backend.entity.User
 import com.scx.backend.entity.UserPreferences
 import com.scx.backend.entity.UserRole
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.repository.UserRepository
 import com.scx.backend.repository.UserRoleRepository
 import org.slf4j.LoggerFactory

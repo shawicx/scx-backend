@@ -1,11 +1,11 @@
-package com.scx.backend.modules.rolepermission
+package com.scx.backend.rbac.rolepermission
 
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
-import com.scx.backend.entity.RolePermission
-import com.scx.backend.repository.PermissionRepository
-import com.scx.backend.repository.RolePermissionRepository
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.entity.RolePermission
+import com.scx.backend.rbac.repository.PermissionRepository
+import com.scx.backend.rbac.repository.RolePermissionRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest

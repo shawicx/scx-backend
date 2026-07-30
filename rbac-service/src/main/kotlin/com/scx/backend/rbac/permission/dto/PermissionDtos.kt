@@ -1,6 +1,6 @@
-package com.scx.backend.modules.permission.dto
+package com.scx.backend.rbac.permission.dto
 
-import com.scx.backend.entity.Permission
+import com.scx.backend.rbac.entity.Permission
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

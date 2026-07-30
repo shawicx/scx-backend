@@ -1,6 +1,6 @@
-package com.scx.backend.repository
+package com.scx.backend.rbac.repository
 
-import com.scx.backend.entity.RolePermission
+import com.scx.backend.rbac.entity.RolePermission
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

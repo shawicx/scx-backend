@@ -1,5 +1,6 @@
 package com.scx.backend.entity
 
+import com.scx.backend.rbac.entity.Role
 import jakarta.persistence.Column
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes

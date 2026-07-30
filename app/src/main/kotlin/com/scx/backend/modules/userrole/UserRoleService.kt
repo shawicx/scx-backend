@@ -3,7 +3,7 @@ package com.scx.backend.modules.userrole
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.entity.UserRole
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.repository.UserRepository
 import com.scx.backend.repository.UserRoleRepository
 import org.slf4j.LoggerFactory

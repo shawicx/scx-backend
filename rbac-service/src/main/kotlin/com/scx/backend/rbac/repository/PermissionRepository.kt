@@ -1,6 +1,6 @@
-package com.scx.backend.repository
+package com.scx.backend.rbac.repository
 
-import com.scx.backend.entity.Permission
+import com.scx.backend.rbac.entity.Permission
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor

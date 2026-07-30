@@ -3,11 +3,11 @@ package com.scx.backend.modules.user
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.util.CryptoUtil
-import com.scx.backend.entity.Role
+import com.scx.backend.rbac.entity.Role
 import com.scx.backend.entity.UserRole
 import com.scx.backend.modules.auth.AuthService
 import com.scx.backend.modules.cache.CacheService
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.repository.UserRepository
 import com.scx.backend.repository.UserRoleRepository
 import org.junit.jupiter.api.AfterEach

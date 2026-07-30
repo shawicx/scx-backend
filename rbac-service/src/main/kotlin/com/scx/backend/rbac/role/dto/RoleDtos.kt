@@ -1,6 +1,6 @@
-package com.scx.backend.modules.role.dto
+package com.scx.backend.rbac.role.dto
 
-import com.scx.backend.entity.Role
+import com.scx.backend.rbac.entity.Role
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size

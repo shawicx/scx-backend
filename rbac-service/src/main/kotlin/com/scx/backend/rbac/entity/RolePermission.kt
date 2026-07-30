@@ -1,4 +1,4 @@
-package com.scx.backend.entity
+package com.scx.backend.rbac.entity
 
 import jakarta.persistence.Column
 import org.hibernate.annotations.JdbcTypeCode

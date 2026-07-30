@@ -24,6 +24,11 @@ dependencies {
     // 届时移除本依赖。notification 是 Spring Boot 应用，此处仅复用其类（jar）。
     implementation(project(":notification-service"))
 
+    // 过渡：RBAC 能力已抽到 rbac-service，app 暂复用其 Role/Permission/RolePermission
+    // entity 与 repository（UserService/SeedService 仍直连这些表）。Step 5 迁移
+    // UserService 到 identity 后改为 RestClient 调 rbac，届时移除本依赖。
+    implementation(project(":rbac-service"))
+
     // Spring Boot 基础
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

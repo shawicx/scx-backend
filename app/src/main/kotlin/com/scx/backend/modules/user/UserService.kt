@@ -28,8 +28,8 @@ import com.scx.backend.modules.user.dto.UserListResponseDto
 import com.scx.backend.modules.user.dto.UserListItemDto
 import com.scx.backend.modules.user.dto.UserResponseDto
 import com.scx.backend.modules.user.dto.UserRoleResponseDto
-import com.scx.backend.repository.PermissionRepository
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.repository.PermissionRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.repository.UserRepository
 import com.scx.backend.repository.UserRoleRepository
 import jakarta.persistence.criteria.Predicate

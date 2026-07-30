@@ -1,16 +1,16 @@
-package com.scx.backend.modules.role
+package com.scx.backend.rbac.role
 
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
-import com.scx.backend.entity.Permission
-import com.scx.backend.entity.Role
-import com.scx.backend.modules.role.dto.AssignPermissionsDto
-import com.scx.backend.modules.role.dto.CreateRoleDto
-import com.scx.backend.modules.role.dto.RoleResponseDto
-import com.scx.backend.modules.role.dto.UpdateRoleDto
-import com.scx.backend.modules.rolepermission.RolePermissionService
-import com.scx.backend.repository.PermissionRepository
-import com.scx.backend.repository.RoleRepository
+import com.scx.backend.rbac.entity.Permission
+import com.scx.backend.rbac.entity.Role
+import com.scx.backend.rbac.role.dto.AssignPermissionsDto
+import com.scx.backend.rbac.role.dto.CreateRoleDto
+import com.scx.backend.rbac.role.dto.RoleResponseDto
+import com.scx.backend.rbac.role.dto.UpdateRoleDto
+import com.scx.backend.rbac.rolepermission.RolePermissionService
+import com.scx.backend.rbac.repository.PermissionRepository
+import com.scx.backend.rbac.repository.RoleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
