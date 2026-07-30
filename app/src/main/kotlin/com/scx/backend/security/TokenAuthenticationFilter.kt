@@ -1,5 +1,6 @@
 package com.scx.backend.security
 
+import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.modules.auth.AuthService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -16,7 +17,9 @@ import org.springframework.web.filter.OncePerRequestFilter
  * 设计说明：
  *  - 本过滤器在 DispatcherServlet 之前执行，无法获取 handler 注解，因此不在此处强制鉴权。
  *  - 若请求携带有效 Bearer token，解析后将用户信息存入 SecurityContext。
- *  - 强制鉴权（401）由 [AuthInterceptor] 基于 @Public 注解执行，@Public 路由放行。
+ *  - 强制鉴权（401）由 AuthInterceptor 基于 @Public 注解执行，@Public 路由放行。
+ *
+ * 注意：AuthPrincipal 已迁入 common 模块（com.scx.backend.common.security）。
  */
 @Component
 class TokenAuthenticationFilter(
@@ -33,6 +36,7 @@ class TokenAuthenticationFilter(
             val payload = authService.validateAccessToken(token)
             if (payload != null) {
                 val authentication = UsernamePasswordAuthenticationToken(
+                    // isAdmin 将在 Step 5（令牌嵌入角色改造）后由 AuthService 提供
                     AuthPrincipal(payload.userId, payload.email),
                     null,
                     listOf(SimpleGrantedAuthority("ROLE_USER")),
@@ -49,8 +53,3 @@ class TokenAuthenticationFilter(
         return if (parts.size == 2 && parts[0] == "Bearer") parts[1] else null
     }
 }
-
-/**
- * SecurityContext 中存储的认证主体（userId + email）
- */
-data class AuthPrincipal(val userId: String, val email: String)

@@ -3,6 +3,7 @@ package com.scx.backend.security
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.response.ApiResponse
+import com.scx.backend.common.security.AuthPrincipal
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus

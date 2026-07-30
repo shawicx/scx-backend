@@ -2,8 +2,8 @@ package com.scx.backend.modules.file
 
 import com.scx.backend.modules.file.dto.DeleteFilesDto
 import com.scx.backend.modules.file.dto.QueryFilesDto
-import com.scx.backend.modules.user.dto.CountResultDto
-import com.scx.backend.security.AuthPrincipal
+import com.scx.backend.common.dto.CountResultDto
+import com.scx.backend.common.security.AuthPrincipal
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag

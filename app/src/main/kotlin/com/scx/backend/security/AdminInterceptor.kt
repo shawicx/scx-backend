@@ -3,6 +3,8 @@ package com.scx.backend.security
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.response.ApiResponse
 import com.scx.backend.common.exception.SystemErrorCode
+import com.scx.backend.common.security.Admin
+import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.modules.user.UserService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

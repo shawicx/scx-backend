@@ -170,23 +170,6 @@ data class QueryUsersDto(
     val sortOrder: String = "DESC",
 )
 
-/** 通用消息响应 */
-@Schema(description = "通用消息响应")
-data class MessageDto(
-    @Schema(description = "提示消息")
-    val message: String,
-)
-
-/** 批量操作结果响应 */
-@Schema(description = "批量操作结果响应")
-data class CountResultDto(
-    @Schema(description = "受影响行数")
-    val count: Int,
-
-    @Schema(description = "提示消息")
-    val message: String,
-)
-
 /** 刷新令牌请求 */
 @Schema(description = "刷新令牌请求")
 data class RefreshTokenDto(

@@ -16,6 +16,9 @@ plugins {
 }
 
 dependencies {
+    // 共享契约模块（响应封装/异常/ULID/令牌工具/注解/跨服务 DTO）
+    implementation(project(":common"))
+
     // Spring Boot 基础
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

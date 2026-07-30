@@ -4,7 +4,7 @@ import com.scx.backend.modules.permission.dto.CreatePermissionDto
 import com.scx.backend.modules.permission.dto.PermissionQueryDto
 import com.scx.backend.modules.permission.dto.PermissionResponseDto
 import com.scx.backend.modules.permission.dto.UpdatePermissionDto
-import com.scx.backend.modules.user.dto.MessageDto
+import com.scx.backend.common.dto.MessageDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag

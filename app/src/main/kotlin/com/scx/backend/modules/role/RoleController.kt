@@ -4,7 +4,7 @@ import com.scx.backend.modules.role.dto.AssignPermissionsDto
 import com.scx.backend.modules.role.dto.CreateRoleDto
 import com.scx.backend.modules.role.dto.RoleResponseDto
 import com.scx.backend.modules.role.dto.UpdateRoleDto
-import com.scx.backend.modules.user.dto.MessageDto
+import com.scx.backend.common.dto.MessageDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
