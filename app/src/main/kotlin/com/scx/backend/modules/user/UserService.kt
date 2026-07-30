@@ -13,7 +13,7 @@ import com.scx.backend.modules.auth.AuthService
 import com.scx.backend.modules.auth.EncryptionKey
 import com.scx.backend.modules.auth.TokenPair
 import com.scx.backend.modules.cache.CacheService
-import com.scx.backend.modules.mail.MailService
+import com.scx.backend.notification.mail.MailService
 import com.scx.backend.modules.user.dto.AssignRoleDto
 import com.scx.backend.modules.user.dto.AssignRolesDto
 import com.scx.backend.modules.user.dto.CreateUserDto

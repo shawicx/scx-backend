@@ -1,4 +1,4 @@
-package com.scx.backend.modules.mail.dto
+package com.scx.backend.notification.mail.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Email

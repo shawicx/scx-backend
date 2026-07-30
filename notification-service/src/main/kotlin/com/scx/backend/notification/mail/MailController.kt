@@ -1,11 +1,11 @@
-package com.scx.backend.modules.mail
+package com.scx.backend.notification.mail
 
 import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.exception.SystemException
-import com.scx.backend.modules.mail.dto.SendHtmlEmailDto
-import com.scx.backend.modules.mail.dto.SendPasswordResetDto
-import com.scx.backend.modules.mail.dto.SendVerificationCodeDto
-import com.scx.backend.modules.mail.dto.SendWelcomeEmailDto
+import com.scx.backend.notification.mail.dto.SendHtmlEmailDto
+import com.scx.backend.notification.mail.dto.SendPasswordResetDto
+import com.scx.backend.notification.mail.dto.SendVerificationCodeDto
+import com.scx.backend.notification.mail.dto.SendWelcomeEmailDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid

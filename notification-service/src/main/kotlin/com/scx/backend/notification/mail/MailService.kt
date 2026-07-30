@@ -1,4 +1,4 @@
-package com.scx.backend.modules.mail
+package com.scx.backend.notification.mail
 
 /**
  * 邮件服务接口

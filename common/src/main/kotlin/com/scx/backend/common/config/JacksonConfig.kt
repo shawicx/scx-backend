@@ -1,4 +1,4 @@
-package com.scx.backend.config
+package com.scx.backend.common.config
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper

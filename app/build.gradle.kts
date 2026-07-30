@@ -19,6 +19,11 @@ dependencies {
     // 共享契约模块（响应封装/异常/ULID/令牌工具/注解/跨服务 DTO）
     implementation(project(":common"))
 
+    // 过渡：邮件能力已抽到 notification-service，app 暂复用其 MailService 实现。
+    // Step 5 将 UserService 迁入 identity-service 后，改为 RestClient 调 notification，
+    // 届时移除本依赖。notification 是 Spring Boot 应用，此处仅复用其类（jar）。
+    implementation(project(":notification-service"))
+
     // Spring Boot 基础
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

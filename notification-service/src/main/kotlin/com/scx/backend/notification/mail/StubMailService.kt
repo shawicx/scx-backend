@@ -1,4 +1,4 @@
-package com.scx.backend.modules.mail
+package com.scx.backend.notification.mail
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Primary

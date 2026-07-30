@@ -1,4 +1,4 @@
-package com.scx.backend.modules.mail
+package com.scx.backend.notification.mail
 
 import jakarta.mail.internet.MimeMessage
 import org.slf4j.LoggerFactory

@@ -1,10 +1,10 @@
-package com.scx.backend.modules.mail
+package com.scx.backend.notification.mail
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.scx.backend.modules.mail.dto.SendHtmlEmailDto
-import com.scx.backend.modules.mail.dto.SendPasswordResetDto
-import com.scx.backend.modules.mail.dto.SendVerificationCodeDto
-import com.scx.backend.modules.mail.dto.SendWelcomeEmailDto
+import com.scx.backend.notification.mail.dto.SendHtmlEmailDto
+import com.scx.backend.notification.mail.dto.SendPasswordResetDto
+import com.scx.backend.notification.mail.dto.SendVerificationCodeDto
+import com.scx.backend.notification.mail.dto.SendWelcomeEmailDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
