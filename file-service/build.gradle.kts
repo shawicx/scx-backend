@@ -22,6 +22,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // OpenAPI 文档（DTO 的 @Schema/@Operation 注解 + Swagger UI）
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.boot:spring-boot-flyway")

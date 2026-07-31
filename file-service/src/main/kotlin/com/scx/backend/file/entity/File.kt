@@ -1,14 +1,10 @@
-package com.scx.backend.entity
+package com.scx.backend.file.entity
 
-import com.scx.backend.identity.entity.User
 import jakarta.persistence.Column
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
@@ -16,6 +12,7 @@ import java.time.LocalDateTime
  * 文件实体
  *
  * 注意：上传与存储业务逻辑暂未实现，本实体仅保证 schema 完整。
+ * userId 为归属用户的标识（跨服务引用，不再用 JPA @ManyToOne 关联 identity 的 User）。
  */
 @Entity
 @Table(name = "files")
@@ -49,8 +46,4 @@ class File(
 
     @Column(name = "\"deletedAt\"")
     var deletedAt: LocalDateTime? = null,
-) {
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "\"userId\"", referencedColumnName = "id", insertable = false, updatable = false)
-    var user: User? = null
-}
+)

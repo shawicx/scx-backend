@@ -1,7 +1,7 @@
-package com.scx.backend.modules.file
+package com.scx.backend.file
 
-import com.scx.backend.modules.file.dto.DeleteFilesDto
-import com.scx.backend.modules.file.dto.QueryFilesDto
+import com.scx.backend.file.dto.DeleteFilesDto
+import com.scx.backend.file.dto.QueryFilesDto
 import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.security.AuthPrincipal
 import io.swagger.v3.oas.annotations.Operation

@@ -1,4 +1,4 @@
-package com.scx.backend.modules.file.dto
+package com.scx.backend.file.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotEmpty

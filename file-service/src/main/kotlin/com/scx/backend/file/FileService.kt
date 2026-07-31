@@ -1,9 +1,9 @@
-package com.scx.backend.modules.file
+package com.scx.backend.file
 
-import com.scx.backend.modules.file.dto.DeleteFilesDto
-import com.scx.backend.modules.file.dto.FileListResponseDto
-import com.scx.backend.modules.file.dto.FileResponseDto
-import com.scx.backend.modules.file.dto.QueryFilesDto
+import com.scx.backend.file.dto.DeleteFilesDto
+import com.scx.backend.file.dto.FileListResponseDto
+import com.scx.backend.file.dto.FileResponseDto
+import com.scx.backend.file.dto.QueryFilesDto
 import org.springframework.stereotype.Service
 
 /**
