@@ -3,7 +3,9 @@ package com.scx.backend.modules.auth
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.util.CryptoUtil
-import com.scx.backend.modules.cache.CacheService
+import com.scx.backend.identity.auth.AuthService
+import com.scx.backend.identity.auth.TokenPayload
+import com.scx.backend.identity.cache.CacheService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals

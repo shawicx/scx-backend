@@ -1,4 +1,4 @@
-package com.scx.backend.modules.user
+package com.scx.backend.identity.user
 
 import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.dto.CountResultDto
@@ -6,7 +6,7 @@ import com.scx.backend.common.dto.MessageDto
 import com.scx.backend.common.security.Admin
 import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.common.util.IpUtils
-import com.scx.backend.modules.user.dto.*
+import com.scx.backend.identity.user.dto.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag

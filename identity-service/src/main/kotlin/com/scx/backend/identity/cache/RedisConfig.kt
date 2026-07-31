@@ -1,4 +1,4 @@
-package com.scx.backend.modules.cache
+package com.scx.backend.identity.cache
 
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean

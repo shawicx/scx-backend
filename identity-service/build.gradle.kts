@@ -16,6 +16,12 @@ plugins {
 dependencies {
     implementation(project(":common"))
 
+    // 过渡：identity 的 UserService/SeedService 仍直连 rbac 表（角色/权限查询），
+    // 并调用 notification 发邮件。Step 6 网关化后改为 RestClient 跨服务调用，
+    // 届时移除这两个依赖。
+    implementation(project(":rbac-service"))
+    implementation(project(":notification-service"))
+
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -23,6 +29,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // OpenAPI 文档（Controller/DTO 的 @Schema/@Operation 注解 + Swagger UI）
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.boot:spring-boot-flyway")

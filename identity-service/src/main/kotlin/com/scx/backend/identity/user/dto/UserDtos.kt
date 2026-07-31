@@ -1,4 +1,4 @@
-package com.scx.backend.modules.user.dto
+package com.scx.backend.identity.user.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid

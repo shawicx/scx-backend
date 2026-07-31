@@ -1,4 +1,4 @@
-package com.scx.backend.security
+package com.scx.backend.identity.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

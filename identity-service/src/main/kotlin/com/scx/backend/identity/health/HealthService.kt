@@ -1,6 +1,6 @@
-package com.scx.backend.modules.health
+package com.scx.backend.identity.health
 
-import com.scx.backend.modules.cache.CacheService
+import com.scx.backend.identity.cache.CacheService
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

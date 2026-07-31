@@ -1,4 +1,4 @@
-package com.scx.backend.entity
+package com.scx.backend.identity.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

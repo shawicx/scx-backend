@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.util.CryptoUtil
 import com.scx.backend.rbac.entity.Role
-import com.scx.backend.entity.UserRole
-import com.scx.backend.modules.auth.AuthService
-import com.scx.backend.modules.cache.CacheService
+import com.scx.backend.identity.entity.UserRole
+import com.scx.backend.identity.auth.AuthService
+import com.scx.backend.identity.cache.CacheService
 import com.scx.backend.rbac.repository.RoleRepository
-import com.scx.backend.repository.UserRepository
-import com.scx.backend.repository.UserRoleRepository
+import com.scx.backend.identity.repository.UserRepository
+import com.scx.backend.identity.repository.UserRoleRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

@@ -1,11 +1,11 @@
-package com.scx.backend.security
+package com.scx.backend.identity.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.response.ApiResponse
 import com.scx.backend.common.exception.SystemErrorCode
 import com.scx.backend.common.security.Admin
 import com.scx.backend.common.security.AuthPrincipal
-import com.scx.backend.modules.user.UserService
+import com.scx.backend.identity.user.UserService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
@@ -42,7 +42,15 @@ class AdminInterceptor(
                 return false
             }
 
-        if (!userService.isAdmin(principal.userId)) {
+        // Step 5 令牌嵌入角色改造：令牌已携带 isAdmin 时优先用它（零 DB 回查）；
+        // 仅当令牌未携带（旧令牌，isAdmin=false 但可能只是字段缺失）时回查 DB 兜底。
+        // Step 6 网关集中鉴权后，下游将完全依赖网关注入的 X-User-Admin 头。
+        val isAdmin = if (principal.isAdmin) {
+            true
+        } else {
+            userService.isAdmin(principal.userId)
+        }
+        if (!isAdmin) {
             writeUnauthorized(response, request, "需要管理员权限")
             return false
         }

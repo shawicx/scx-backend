@@ -1,4 +1,4 @@
-package com.scx.backend.modules.user
+package com.scx.backend.identity.user
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
@@ -6,32 +6,32 @@ import com.scx.backend.common.constants.TtlConstants
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.CryptoUtil
 import com.scx.backend.common.util.IdGenerator
-import com.scx.backend.entity.User
-import com.scx.backend.entity.UserPreferences
-import com.scx.backend.entity.UserRole
-import com.scx.backend.modules.auth.AuthService
-import com.scx.backend.modules.auth.EncryptionKey
-import com.scx.backend.modules.auth.TokenPair
-import com.scx.backend.modules.cache.CacheService
+import com.scx.backend.identity.entity.User
+import com.scx.backend.identity.entity.UserPreferences
+import com.scx.backend.identity.entity.UserRole
+import com.scx.backend.identity.auth.AuthService
+import com.scx.backend.identity.auth.EncryptionKey
+import com.scx.backend.identity.auth.TokenPair
+import com.scx.backend.identity.cache.CacheService
 import com.scx.backend.notification.mail.MailService
-import com.scx.backend.modules.user.dto.AssignRoleDto
-import com.scx.backend.modules.user.dto.AssignRolesDto
-import com.scx.backend.modules.user.dto.CreateUserDto
-import com.scx.backend.modules.user.dto.DeleteUsersDto
-import com.scx.backend.modules.user.dto.LoginResponseDto
-import com.scx.backend.modules.user.dto.LoginUserDto
-import com.scx.backend.modules.user.dto.LoginWithPasswordDto
-import com.scx.backend.modules.user.dto.QueryUsersDto
-import com.scx.backend.modules.user.dto.RegisterUserDto
-import com.scx.backend.modules.user.dto.ToggleUserStatusDto
-import com.scx.backend.modules.user.dto.UserListResponseDto
-import com.scx.backend.modules.user.dto.UserListItemDto
-import com.scx.backend.modules.user.dto.UserResponseDto
-import com.scx.backend.modules.user.dto.UserRoleResponseDto
+import com.scx.backend.identity.user.dto.AssignRoleDto
+import com.scx.backend.identity.user.dto.AssignRolesDto
+import com.scx.backend.identity.user.dto.CreateUserDto
+import com.scx.backend.identity.user.dto.DeleteUsersDto
+import com.scx.backend.identity.user.dto.LoginResponseDto
+import com.scx.backend.identity.user.dto.LoginUserDto
+import com.scx.backend.identity.user.dto.LoginWithPasswordDto
+import com.scx.backend.identity.user.dto.QueryUsersDto
+import com.scx.backend.identity.user.dto.RegisterUserDto
+import com.scx.backend.identity.user.dto.ToggleUserStatusDto
+import com.scx.backend.identity.user.dto.UserListResponseDto
+import com.scx.backend.identity.user.dto.UserListItemDto
+import com.scx.backend.identity.user.dto.UserResponseDto
+import com.scx.backend.identity.user.dto.UserRoleResponseDto
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
-import com.scx.backend.repository.UserRepository
-import com.scx.backend.repository.UserRoleRepository
+import com.scx.backend.identity.repository.UserRepository
+import com.scx.backend.identity.repository.UserRoleRepository
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -99,8 +99,9 @@ class UserService(
         }
         updateLoginInfo(user.id, clientIp)
         val updated = userRepository.findById(user.id).orElseThrow()
-        val access = authService.generateAccessToken(updated.id, updated.email)
-        val refresh = authService.generateRefreshToken(updated.id, updated.email)
+        val admin = isAdmin(updated.id)
+        val access = authService.generateAccessToken(updated.id, updated.email, admin)
+        val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
         return LoginResponseDto.from(updated, access, refresh)
     }
 
@@ -124,8 +125,9 @@ class UserService(
         }
         updateLoginInfo(user.id, clientIp)
         val updated = userRepository.findById(user.id).orElseThrow()
-        val access = authService.generateAccessToken(updated.id, updated.email)
-        val refresh = authService.generateRefreshToken(updated.id, updated.email)
+        val admin = isAdmin(updated.id)
+        val access = authService.generateAccessToken(updated.id, updated.email, admin)
+        val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
         return LoginResponseDto.from(updated, access, refresh)
     }
 
@@ -133,7 +135,11 @@ class UserService(
         authService.logout(userId)
     }
 
-    fun refreshTokens(refreshToken: String): TokenPair? = authService.refreshTokens(refreshToken)
+    /**
+     * 刷新令牌：传入 isAdmin 计算回调，刷新时重算管理员标志（角色变更后刷新即生效）
+     */
+    fun refreshTokens(refreshToken: String): TokenPair? =
+        authService.refreshTokens(refreshToken) { userId -> isAdmin(userId) }
 
     fun getEncryptionKey(): EncryptionKey = authService.generateEncryptionKey()
 

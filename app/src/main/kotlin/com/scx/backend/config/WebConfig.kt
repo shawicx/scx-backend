@@ -1,8 +1,8 @@
 package com.scx.backend.config
 
 import com.scx.backend.common.web.AccessLogInterceptor
-import com.scx.backend.security.AdminInterceptor
-import com.scx.backend.security.AuthInterceptor
+import com.scx.backend.identity.security.AdminInterceptor
+import com.scx.backend.identity.security.AuthInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
 import org.springframework.web.servlet.config.annotation.CorsRegistry

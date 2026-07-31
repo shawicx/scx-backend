@@ -1,4 +1,4 @@
-package com.scx.backend.modules.cache
+package com.scx.backend.identity.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory

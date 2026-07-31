@@ -1,13 +1,13 @@
-package com.scx.backend.modules.seed
+package com.scx.backend.identity.seed
 
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.rbac.entity.Role
-import com.scx.backend.entity.User
-import com.scx.backend.entity.UserPreferences
-import com.scx.backend.entity.UserRole
+import com.scx.backend.identity.entity.User
+import com.scx.backend.identity.entity.UserPreferences
+import com.scx.backend.identity.entity.UserRole
 import com.scx.backend.rbac.repository.RoleRepository
-import com.scx.backend.repository.UserRepository
-import com.scx.backend.repository.UserRoleRepository
+import com.scx.backend.identity.repository.UserRepository
+import com.scx.backend.identity.repository.UserRoleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.ApplicationArguments

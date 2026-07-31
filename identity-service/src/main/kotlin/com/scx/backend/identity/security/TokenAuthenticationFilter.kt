@@ -1,7 +1,7 @@
-package com.scx.backend.security
+package com.scx.backend.identity.security
 
 import com.scx.backend.common.security.AuthPrincipal
-import com.scx.backend.modules.auth.AuthService
+import com.scx.backend.identity.auth.AuthService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -36,8 +36,8 @@ class TokenAuthenticationFilter(
             val payload = authService.validateAccessToken(token)
             if (payload != null) {
                 val authentication = UsernamePasswordAuthenticationToken(
-                    // isAdmin 将在 Step 5（令牌嵌入角色改造）后由 AuthService 提供
-                    AuthPrincipal(payload.userId, payload.email),
+                    // isAdmin 来自令牌 payload（Step 5 令牌嵌入角色改造）
+                    AuthPrincipal(payload.userId, payload.email, payload.isAdmin),
                     null,
                     listOf(SimpleGrantedAuthority("ROLE_USER")),
                 )

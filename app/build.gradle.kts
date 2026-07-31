@@ -29,6 +29,10 @@ dependencies {
     // UserService 到 identity 后改为 RestClient 调 rbac，届时移除本依赖。
     implementation(project(":rbac-service"))
 
+    // 过渡：身份认证能力已抽到 identity-service，app 暂复用其 UserService/AuthService/
+    // SecurityConfig 等。Step 7 单体退役后移除本依赖。
+    implementation(project(":identity-service"))
+
     // Spring Boot 基础
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

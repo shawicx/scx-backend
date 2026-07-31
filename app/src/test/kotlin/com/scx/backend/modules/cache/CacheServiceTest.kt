@@ -1,6 +1,7 @@
 package com.scx.backend.modules.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.scx.backend.identity.cache.CacheService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull

@@ -1,6 +1,6 @@
-package com.scx.backend.repository
+package com.scx.backend.identity.repository
 
-import com.scx.backend.entity.User
+import com.scx.backend.identity.entity.User
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository

@@ -1,4 +1,4 @@
-package com.scx.backend.security
+package com.scx.backend.identity.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.decorator.Public

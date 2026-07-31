@@ -1,7 +1,7 @@
-package com.scx.backend.modules.user.dto
+package com.scx.backend.identity.user.dto
 
-import com.scx.backend.entity.User
-import com.scx.backend.entity.UserPreferences
+import com.scx.backend.identity.entity.User
+import com.scx.backend.identity.entity.UserPreferences
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**

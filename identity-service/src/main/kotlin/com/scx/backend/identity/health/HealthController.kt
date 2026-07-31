@@ -1,4 +1,4 @@
-package com.scx.backend.modules.health
+package com.scx.backend.identity.health
 
 import com.scx.backend.common.decorator.Public
 import io.swagger.v3.oas.annotations.Operation

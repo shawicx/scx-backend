@@ -2,7 +2,7 @@
  * @description 用户偏好设置实体（对应 users.preferences jsonb 列的强类型结构）。
  * 定义于 entity 包，供 User 实体及各响应 DTO 共用，避免实体层反向依赖 dto 层。
  */
-package com.scx.backend.entity
+package com.scx.backend.identity.entity
 
 import io.swagger.v3.oas.annotations.media.Schema
 

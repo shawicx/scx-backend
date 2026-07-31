@@ -1,7 +1,7 @@
 package com.scx.backend.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.scx.backend.modules.auth.AuthService
+import com.scx.backend.identity.auth.AuthService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
