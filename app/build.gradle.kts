@@ -17,7 +17,7 @@ plugins {
 
 dependencies {
     // 共享契约模块（响应封装/异常/ULID/令牌工具/注解/跨服务 DTO）
-    implementation(project(":common"))
+    implementation(project(":common-web"))
 
     // 过渡：邮件能力已抽到 notification-service，app 暂复用其 MailService 实现。
     // Step 5 将 UserService 迁入 identity-service 后，改为 RestClient 调 notification，

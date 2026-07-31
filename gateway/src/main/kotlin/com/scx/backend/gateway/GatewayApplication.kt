@@ -4,9 +4,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 /**
- * @description API 网关启动入口（骨架）。集中鉴权与路由在 Step 6 实现。
+ * @description API 网关启动入口。
+ *
+ * 集中鉴权（AuthGlobalFilter）+ 路由 + CORS。
+ * 扫描根包 com.scx.backend 以发现 common 模块的共享配置（JacksonConfig 等）。
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = ["com.scx.backend"])
 class GatewayApplication
 
 fun main(args: Array<String>) {

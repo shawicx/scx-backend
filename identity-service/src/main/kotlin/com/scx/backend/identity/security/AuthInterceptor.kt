@@ -3,6 +3,7 @@ package com.scx.backend.identity.security
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.response.ApiResponse
+import com.scx.backend.common.security.AuthContextResolver
 import com.scx.backend.common.security.AuthPrincipal
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,12 +15,14 @@ import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.HandlerInterceptor
 
 /**
- * 鉴权拦截器
+ * 鉴权拦截器（下游服务侧）
  *
  * 在 Handler 解析后执行，能获取方法/类级 @Public 注解：
  *  1. @Public 路由 → 放行
- *  2. 否则要求 SecurityContext 中存在已认证主体（由 TokenAuthenticationFilter 设置）
+ *  2. 否则要求请求携带有效用户身份（网关 X-User-* 头优先，兜底 SecurityContext）
  *  3. 未认证 → 401 + 统一 ApiResponse（业务码 9000）
+ *
+ * 微服务化后鉴权集中在网关，本拦截器仅校验身份存在性（由 AuthContextResolver 统一解析）。
  */
 @Component
 class AuthInterceptor(
@@ -52,9 +55,10 @@ class AuthInterceptor(
             return true
         }
 
-        // 2. 检查认证主体
-        val auth = SecurityContextHolder.getContext().authentication
-        if (auth == null || !auth.isAuthenticated || auth.principal !is AuthPrincipal) {
+        // 2. 校验用户身份：网关 X-User-* 头优先，兜底 SecurityContext（本地令牌场景）
+        val hasIdentity = AuthContextResolver.resolveFromHeader(request) != null ||
+            (SecurityContextHolder.getContext()?.authentication?.principal is AuthPrincipal)
+        if (!hasIdentity) {
             writeUnauthorized(response, request, "缺少访问令牌")
             return false
         }

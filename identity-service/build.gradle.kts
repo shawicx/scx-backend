@@ -14,7 +14,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":common"))
+    implementation(project(":common-web"))
 
     // 过渡：identity 的 UserService/SeedService 仍直连 rbac 表（角色/权限查询），
     // 并调用 notification 发邮件。Step 6 网关化后改为 RestClient 跨服务调用，
