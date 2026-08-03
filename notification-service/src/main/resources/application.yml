@@ -1,0 +1,66 @@
+# notification-service 配置（邮件服务）
+spring:
+  application:
+    name: scx-notification
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # 加载项目根目录的 .env 文件（与单体时代一致）
+  config:
+    import: "optional:file:.env[.properties]"
+
+  # 邮件（敏感凭据 SMTP 授权码必须通过环境变量注入，不设默认值）
+  mail:
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER:noreply@example.com}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+      mail.smtp.ssl.enable: ${MAIL_SSL:false}
+      mail.smtp.ssl.trust: ${MAIL_HOST:smtp.example.com}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+  # Thymeleaf 模板引擎（邮件模板，从 classpath:/templates/ 加载，模板用 mail/xxx 路径）
+  thymeleaf:
+    cache: false
+
+# 邮件模块开关：false 用 StubMailService（不发真实邮件），true 用 SmtpMailService
+mail:
+  enabled: ${MAIL_ENABLED:true}
+  timeout-ms: ${MAIL_TIMEOUT_MS:30000}
+
+# 应用名（SmtpMailService 模板变量 appName）
+app:
+  name: ${APP_NAME:SCX Service}
+
+# Swagger
+swagger:
+  enabled: ${SWAGGER_ENABLED:true}
+  title: ${SWAGGER_TITLE:SCX Notification API}
+  description: ${SWAGGER_DESCRIPTION:SCX Notification Service API}
+  version: ${SWAGGER_VERSION:1.0}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: ${NOTIFICATION_PORT:3003}
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: DEBUG

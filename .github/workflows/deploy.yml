@@ -1,40 +1,42 @@
 # ============================================================
-# @description SCX Backend 自动部署工作流
+# @description SCX Backend 微服务自动部署工作流
 # ------------------------------------------------------------
 # 触发条件：
-#   - push 到 main 分支：自动构建镜像 → 推送 ACR → SSH 部署到 ECS
-#   - workflow_dispatch：支持在 GitHub Actions 页面手动触发（紧急重试/回滚）
+#   - push 到 main 分支：构建 5 个服务镜像 → 推送 ACR → SSH 部署到 ECS
+#   - workflow_dispatch：手动触发（紧急重试/回滚）
 #
-# 部署链路：
-#   ./gradlew bootBuildImage → docker tag → docker push (阿里云 ACR)
+# 部署链路（多服务）：
+#   ./gradlew :<service>:bootBuildImage（5 个服务）
+#   → docker tag → docker push (阿里云 ACR)
 #   → SSH 登录 ECS → docker pull
-#   → 幂等启动 PostgreSQL + Redis → 等待 PG 就绪
-#   → 重启应用容器 → 健康检查
+#   → 幂等启动 PostgreSQL + Redis 依赖
+#   → 启动 5 个服务容器（gateway 对外 8080，其余内部通信）
+#   → 健康检查（轮询网关 /api/health）
+#
+# 服务拓扑（ECS host 网络）：
+#   客户端 → gateway(8080) → identity(3001) / rbac(3002) / notification(3003) / file(3004)
+#   仅网关对外暴露；下游服务通过 localhost:<port> 内部通信
 #
 # 安全模型：
-#   - 生产秘钥（DB_PASSWORD/JWT_SECRET/MAIL_PASSWORD 等）只存在于
-#     ECS 本地的 .env 文件，通过 docker run --env-file 注入容器
-#   - GitHub 仅保存 ACR 凭证与 ECS SSH 凭证，不保存任何业务秘钥
-#   - --network host：复用宿主网络，使容器内 localhost:5433/6388
-#     直接打通 ECS 上 docker-compose 起的 PG/Redis
+#   - 生产秘钥（DB/JWT/MAIL 等）只存在于 ECS 本地 .env 文件，通过 docker run --env-file 注入
+#   - GitHub 仅保存 ACR 凭证与 ECS SSH 凭证
+#   - --network host：复用宿主网络，各服务 localhost:<port> 直连
 #
-# 依赖的 GitHub Secrets（在仓库 Settings → Secrets and variables 配置）：
-#   ACR_REGISTRY    阿里云 ACR 注册中心地址，如 registry.cn-hangzhou.aliyuncs.com
-#   ACR_NAMESPACE   ACR 命名空间，如 scx
-#   ACR_USERNAME    ACR 登录账号（阿里云账号或 RAM 子账号）
-#   ACR_PASSWORD    ACR 访问凭证（在容器镜像服务控制台设置固定密码）
-#   ECS_HOST        ECS 公网 IP
-#   ECS_USER        SSH 登录用户（如 root / ecs-user）
-#   ECS_SSH_KEY     SSH 私钥完整内容（PEM 格式）
-#   ECS_ENV_FILE    ECS 上生产 .env 文件的绝对路径，如 /opt/scx-backend/.env
+# 依赖的 GitHub Secrets（与单体时代一致）：
+#   ACR_REGISTRY / ACR_NAMESPACE / ACR_USERNAME / ACR_PASSWORD
+#   ECS_HOST / ECS_USER / ECS_SSH_KEY / ECS_ENV_FILE
 # ============================================================
 
 name: Deploy to Aliyun ECS
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
+
+# 最小权限：两个 job 均不使用 GITHUB_TOKEN（ACR/ECS 凭证来自 secrets），
+# 显式撤销其全部权限，遵循 least-privilege 原则，降低凭证泄露时的影响面。
+permissions: {}
 
 # 同一分支并发部署时取消旧的，避免重复滚动
 concurrency:
@@ -43,10 +45,10 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Job 1：在 GitHub runner 上构建镜像并推送到阿里云 ACR
+  # Job 1：构建 5 个服务镜像并推送到阿里云 ACR
   # ============================================================
   build-and-push:
-    name: Build & Push Image
+    name: Build & Push Images
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,46 +61,40 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: Build OCI image (bootBuildImage)
-        # 使用项目原生 Spring Boot 构建任务（Cloud Native Buildpacks）
-        # 默认镜像名：docker.io/library/scx-backend:0.0.1-SNAPSHOT（由 build.gradle.kts 决定）
-        # 默认 profile：prod（build.gradle.kts 中 bootBuildImage 已配置）
-        run: ./gradlew bootBuildImage --no-daemon
+      - name: Build OCI images (bootBuildImage)
+        # 为每个服务构建镜像。bootBuildImage 默认产出：
+        #   docker.io/library/<模块名>:0.0.1-SNAPSHOT
+        # 默认 profile：prod（各模块 build.gradle.kts 已配置）
+        run: ./gradlew :gateway:bootBuildImage :identity-service:bootBuildImage :rbac-service:bootBuildImage :notification-service:bootBuildImage :file-service:bootBuildImage --no-daemon -x test
 
       - name: Login to Aliyun ACR
         run: |
           echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_REGISTRY }}" \
             -u "${{ secrets.ACR_USERNAME }}" --password-stdin
 
-      - name: Tag & Push image
-        id: meta
+      - name: Tag & Push images
         env:
-          # bootBuildImage 产出的原始镜像名（与 build.gradle.kts 的 artifactId + version 一致）
-          SOURCE_IMAGE: docker.io/library/scx-backend:0.0.1-SNAPSHOT
-          # 目标镜像仓库：registry.cn-xxx.aliyuncs.com/<namespace>/scx-backend
-          TARGET_REPO: ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/scx-backend
-          # 取 commit 前 7 位作为版本标签，便于审计与回滚
+          TARGET_NS: ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}
           SHORT_SHA: ${{ github.sha }}
         run: |
-          # 短 sha（bash 字符串截取）
+          set -euo pipefail
           SHORT="${SHORT_SHA:0:7}"
+          # 5 个服务的镜像名（与 Gradle 模块名一致）
+          SERVICES=(gateway identity-service rbac-service notification-service file-service)
 
-          # 打 latest 标签（ECS 部署默认拉取此标签）
-          docker tag "$SOURCE_IMAGE" "$TARGET_REPO:latest"
-          # 打 sha 标签（保留历史版本，便于回滚：docker pull <repo>:sha-xxxxxxx）
-          docker tag "$SOURCE_IMAGE" "$TARGET_REPO:sha-$SHORT"
-
-          docker push "$TARGET_REPO:latest"
-          docker push "$TARGET_REPO:sha-$SHORT"
-
-          # 记录推送后的镜像摘要，作为构建产物的可追溯凭证
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$TARGET_REPO:latest" || echo "")
-          echo "image=$TARGET_REPO:latest" >> "$GITHUB_OUTPUT"
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
-          echo "Pushed: $TARGET_REPO:latest (sha-$SHORT)"
+          for SVC in "${SERVICES[@]}"; do
+            SOURCE="docker.io/library/${SVC}:0.0.1-SNAPSHOT"
+            TARGET="$TARGET_NS/${SVC}"
+            echo "==> 推送 $SVC"
+            docker tag "$SOURCE" "$TARGET:latest"
+            docker tag "$SOURCE" "$TARGET:sha-$SHORT"
+            docker push "$TARGET:latest"
+            docker push "$TARGET:sha-$SHORT"
+            echo "    ✓ $TARGET:latest (sha-$SHORT)"
+          done
 
   # ============================================================
-  # Job 2：SSH 登录 ECS，拉取新镜像并重启容器
+  # Job 2：SSH 登录 ECS，拉取镜像并启动全部服务容器
   # ============================================================
   deploy:
     name: Deploy to ECS
@@ -113,32 +109,25 @@ jobs:
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
           ECS_ENV_FILE: ${{ secrets.ECS_ENV_FILE }}
-          # 直接用 secrets 拼接镜像名,绕过 job outputs 在 ssh-action envs 透传的不可靠问题
-          # (build-and-push job 推送的 latest 标签与此处完全一致)
-          IMAGE_URL: ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/scx-backend:latest
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
-          # 长命令（镜像拉取 + 应用启动）需要更长的超时
-          command_timeout: 10m
-          # 把需要的环境变量传到远端 shell（与下方 env: 中定义的变量名一一对应）
-          envs: ACR_REGISTRY,ACR_NAMESPACE,ACR_USERNAME,ACR_PASSWORD,ECS_ENV_FILE,IMAGE_URL
+          command_timeout: 15m
+          envs: ACR_REGISTRY,ACR_NAMESPACE,ACR_USERNAME,ACR_PASSWORD,ECS_ENV_FILE
           # 远端部署脚本：
-          # 1. 校验 ECS 本地 .env 文件存在
-          # 2. 登录 ACR
-          # 3. 拉取最新应用镜像
-          # 4. 幂等启动 PostgreSQL + Redis 依赖容器（首次创建，后续跳过）
-          # 5. 等待 PostgreSQL 就绪（pg_isready 轮询）
-          # 6. 停止并删除旧应用容器（首次部署容器不存在时容错跳过）
-          # 7. 启动新应用容器（host 网络 + 自动重启 + 注入本地 .env）
-          # 8. 清理悬空旧镜像，节省磁盘
-          # 9. 健康检查：轮询 /api/health，最多等待 90 秒
+          # 1. 校验 .env / 登录 ACR
+          # 2. 拉取 5 个服务镜像
+          # 3. 幂等启动 PG + Redis 依赖
+          # 4. 等待 PG 就绪
+          # 5. 启动 5 个服务容器（仅 gateway 对外，--env-file 注入生产配置）
+          # 6. 健康检查（轮询网关 /api/health）
           script: |
             set -euo pipefail
 
-            IMAGE="$IMAGE_URL"
+            NS="$ACR_REGISTRY/$ACR_NAMESPACE"
             ENV_FILE="$ECS_ENV_FILE"
+            SERVICES=(gateway identity-service rbac-service notification-service file-service)
 
             echo "==> 校验 .env 文件存在: $ENV_FILE"
             if [ ! -f "$ENV_FILE" ]; then
@@ -150,27 +139,22 @@ jobs:
             echo "==> 登录阿里云 ACR"
             docker login "$ACR_REGISTRY" -u "$ACR_USERNAME" -p "$ACR_PASSWORD"
 
-            echo "==> 拉取最新镜像: $IMAGE"
-            docker pull "$IMAGE"
+            # 拉取全部服务镜像
+            for SVC in "${SERVICES[@]}"; do
+              echo "==> 拉取镜像: $NS/$SVC:latest"
+              docker pull "$NS/$SVC:latest"
+            done
 
             # ============================================================
-            # 确保依赖容器（PostgreSQL + Redis）运行
-            # ------------------------------------------------------------
-            # 幂等：容器存在则 docker start（对运行中容器是空操作），
-            #       不存在则 docker run 创建。多次部署绝不重建容器、不丢数据。
-            # 配置完全镜像项目 docker-compose.yml（端口/账号/库/版本一致）。
+            # 确保依赖容器（PostgreSQL + Redis）运行（幂等）
             # ============================================================
             echo "==> 确保依赖容器（PostgreSQL + Redis）运行"
 
-            # PostgreSQL
             if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-postgres$'; then
               echo "  PostgreSQL 容器已存在，确保运行中"
               docker start scx-backend-postgres >/dev/null 2>&1 || true
             else
               echo "  PostgreSQL 容器不存在，创建并启动"
-              # 注意：POSTGRES_PASSWORD / POSTGRES_DB 仅在数据卷首次初始化时生效，
-              # 后续修改这些环境变量不会改变已初始化的数据库密码或库名。
-              # 如需修改密码，必须先删除数据卷 scx-backend-postgres-data 重新初始化。
               docker run -d \
                 --name scx-backend-postgres \
                 --network host \
@@ -183,7 +167,6 @@ jobs:
                 postgres -c port=5433
             fi
 
-            # Redis
             if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-redis$'; then
               echo "  Redis 容器已存在，确保运行中"
               docker start scx-backend-redis >/dev/null 2>&1 || true
@@ -199,7 +182,6 @@ jobs:
             fi
 
             # 等待 PostgreSQL 就绪
-            # PG 首次初始化（建库、建角色）需要数秒到数十秒，不等的话应用启动会连接失败。
             echo "==> 等待 PostgreSQL 就绪（最长 60 秒）"
             for i in $(seq 1 30); do
               if docker exec scx-backend-postgres pg_isready -U scx -p 5433 >/dev/null 2>&1; then
@@ -208,7 +190,6 @@ jobs:
               fi
               if [ "$i" -eq 30 ]; then
                 echo "ERROR: PostgreSQL 60 秒内未就绪，终止部署"
-                echo "--- PostgreSQL 容器最近日志 ---"
                 docker logs --tail 30 scx-backend-postgres || true
                 exit 1
               fi
@@ -216,36 +197,85 @@ jobs:
               sleep 2
             done
 
-            echo "==> 停止并删除旧容器 scx-backend"
-            docker stop scx-backend 2>/dev/null || true
-            docker rm   scx-backend 2>/dev/null || true
+            # ============================================================
+            # 启动服务容器（先下游后网关）
+            # --network host：各服务 localhost:<port> 互通
+            # --env-file：注入 ECS 本地 .env（含 DB/JWT/MAIL/服务地址等）
+            # ============================================================
 
-            echo "==> 启动新容器"
-            # --network host  : 复用宿主网络，容器内 localhost:5433/6388 直达 PG/Redis
-            # --restart always: 容器崩溃或 ECS 重启时自动拉起
-            # --env-file      : 注入 ECS 本地 .env（含 DB/JWT/MAIL 等敏感变量）
+            # 通用：停止并删除同名旧容器
+            stop_and_rm() {
+              docker stop "$1" 2>/dev/null || true
+              docker rm   "$1" 2>/dev/null || true
+            }
+            
+            # 迁移清理：移除历史单体容器（首次部署时不存在则自动跳过）
+            stop_and_rm scx-backend
+            
+            echo "==> 启动 identity-service (3001)"
+            stop_and_rm scx-identity
             docker run -d \
-              --name scx-backend \
+              --name scx-identity \
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              "$IMAGE"
+              "$NS/identity-service:latest"
+
+            echo "==> 启动 rbac-service (3002)"
+            stop_and_rm scx-rbac
+            docker run -d \
+              --name scx-rbac \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              "$NS/rbac-service:latest"
+
+            echo "==> 启动 notification-service (3003)"
+            stop_and_rm scx-notification
+            docker run -d \
+              --name scx-notification \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              "$NS/notification-service:latest"
+
+            echo "==> 启动 file-service (3004)"
+            stop_and_rm scx-file
+            docker run -d \
+              --name scx-file \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              "$NS/file-service:latest"
+
+            # 网关依赖下游服务，最后启动；.env 中 IDENTITY/RBAC/NOTIFICATION/FILE_BASE_URL
+            # 指向 http://localhost:<port>（host 网络下各服务互通）
+            echo "==> 启动 gateway (8080)"
+            stop_and_rm scx-gateway
+            docker run -d \
+              --name scx-gateway \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              "$NS/gateway:latest"
 
             echo "==> 清理悬空镜像"
             docker image prune -f
 
-            echo "==> 健康检查: 轮询 http://localhost:3000/api/health"
-            for i in $(seq 1 18); do
-              if curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
+            # 健康检查：轮询网关 /api/health（最多 120 秒，5 个服务启动需更长时间）
+            echo "==> 健康检查: 轮询 http://localhost:8080/api/health"
+            for i in $(seq 1 24); do
+              if curl -fsS http://localhost:8080/api/health > /dev/null 2>&1; then
                 echo "健康检查通过（第 $((i*5)) 秒）"
-                docker ps --filter "name=scx-backend" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                echo "--- 运行中的服务容器 ---"
+                docker ps --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}"
                 exit 0
               fi
-              echo "  等待应用启动... ($i/18)"
+              echo "  等待服务启动... ($i/24)"
               sleep 5
             done
 
-            echo "ERROR: 健康检查超时（90 秒内未就绪）"
-            echo "--- 容器最近日志 ---"
-            docker logs --tail 80 scx-backend || true
+            echo "ERROR: 健康检查超时（120 秒内网关未就绪）"
+            echo "--- gateway 容器最近日志 ---"
+            docker logs --tail 50 scx-gateway || true
             exit 1

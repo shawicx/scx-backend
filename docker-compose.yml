@@ -1,8 +1,24 @@
+# ============================================================
+# scx-backend 微服务本地联调编排
+# ============================================================
+# 基础设施：PostgreSQL 16（5433）+ Redis 7（6388）
+# 应用服务：gateway(8080) + identity(3001) + rbac(3002) + notification(3003) + file(3004)
+#
+# 使用方式：
+#   1. 构建镜像：./gradlew bootBuildImage -x test
+#   2. 启动全栈：docker-compose up -d
+#   3. 对外入口：http://localhost:8080/api（网关）
+#   4. 各服务自带 Swagger（直连端口访问）：如 http://localhost:3001/api/swagger-ui.html
+#
+# 注：app 模块为集成测试聚合，不在生产部署中，故不纳入 compose。
+# ============================================================
+
 services:
+  # -------------------- 基础设施 --------------------
   postgres:
     image: postgres:16-alpine
     container_name: scx-backend-postgres
-    # 容器内也监听 5433，与 scx-service 完全一致（postgres 默认监听 5432）
+    # 容器内也监听 5433（与历史配置一致）
     command: ["postgres", "-c", "port=5433"]
     environment:
       POSTGRES_USER: scx
@@ -23,7 +39,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: scx-backend-redis
-    # 容器内也监听 6388，与 scx-service 完全一致（redis 默认监听 6379）
+    # 容器内也监听 6388（与历史配置一致）
     command: ["redis-server", "--port", "6388"]
     ports:
       - "6388:6388"
@@ -35,6 +51,96 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
+
+  # -------------------- 应用服务 --------------------
+  # 镜像需先用 ./gradlew :<service>:bootBuildImage 构建（默认镜像名 docker.io/library/<service>:0.0.1-SNAPSHOT）
+  # 网络模式 host 仅用于生产 ECS；本地用端口映射便于隔离调试
+
+  identity-service:
+    image: docker.io/library/identity-service:0.0.1-SNAPSHOT
+    container_name: scx-identity
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5433
+      REDIS_HOST: redis
+      REDIS_PORT: 6388
+      JWT_SECRET: ${JWT_SECRET:-default-secret}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rbac-service:
+    image: docker.io/library/rbac-service:0.0.1-SNAPSHOT
+    container_name: scx-rbac
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5433
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-service:
+    image: docker.io/library/notification-service:0.0.1-SNAPSHOT
+    container_name: scx-notification
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MAIL_ENABLED: "false"
+      APP_NAME: SCX Service
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  file-service:
+    image: docker.io/library/file-service:0.0.1-SNAPSHOT
+    container_name: scx-file
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5433
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  gateway:
+    image: docker.io/library/gateway:0.0.1-SNAPSHOT
+    container_name: scx-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6388
+      JWT_SECRET: ${JWT_SECRET:-default-secret}
+      # 下游服务地址（容器名 + 端口）
+      IDENTITY_BASE_URL: http://identity-service:3001
+      RBAC_BASE_URL: http://rbac-service:3002
+      NOTIFICATION_BASE_URL: http://notification-service:3003
+      FILE_BASE_URL: http://file-service:3004
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+      rbac-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      file-service:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
