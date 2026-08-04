@@ -62,8 +62,8 @@ jobs:
           cache: gradle
 
       - name: Build OCI images (bootBuildImage)
-        # 为每个服务构建镜像。bootBuildImage 默认产出：
-        #   docker.io/library/<模块名>:0.0.1-SNAPSHOT
+        # 为每个服务构建镜像。Spring Boot 4 的 bootBuildImage 默认产出：
+        #   docker.io/library/<模块名>:latest（注意：Boot 4 默认 tag 是 latest，不是 version）
         # 默认 profile：prod（各模块 build.gradle.kts 已配置）
         run: ./gradlew :gateway:bootBuildImage :identity-service:bootBuildImage :rbac-service:bootBuildImage :notification-service:bootBuildImage :file-service:bootBuildImage --no-daemon -x test
 
@@ -83,7 +83,8 @@ jobs:
           SERVICES=(gateway identity-service rbac-service notification-service file-service)
 
           for SVC in "${SERVICES[@]}"; do
-            SOURCE="docker.io/library/${SVC}:0.0.1-SNAPSHOT"
+            # Spring Boot 4 bootBuildImage 默认 tag 是 latest（不是 version）
+            SOURCE="docker.io/library/${SVC}:latest"
             TARGET="$TARGET_NS/${SVC}"
             echo "==> 推送 $SVC"
             docker tag "$SOURCE" "$TARGET:latest"
