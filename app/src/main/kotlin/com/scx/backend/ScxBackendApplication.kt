@@ -10,24 +10,28 @@ import org.springframework.context.annotation.FilterType
 import org.springframework.boot.runApplication
 
 /**
- * 过渡单体启动入口。
+ * 过渡单体启动入口（兼集成测试聚合模块）。
  *
- * app 依赖各微服务模块（notification/rbac/identity 等）仅复用其类，但其它模块的
- * @SpringBootApplication 主类（带 @EnableJpaRepositories/@EnableAutoConfiguration）
- * 落在 com.scx.backend 扫描树下会被本类重复拾取，导致 bean 定义覆盖冲突。
- * 因此显式排除这些微服务主类，仅保留 common 共享组件与本单体自身逻辑。
- * Step 7 单体退役后本类一并删除。
+ * app 依赖各微服务模块（notification/rbac/identity/file 等）复用其类，但需排除两类冲突源：
+ *  1. 各模块的 @SpringBootApplication 主类（带 @EnableJpaRepositories，会重复注册 repository bean）
+ *  2. rbac/file 的 SecurityConfig（与 identity 的 SecurityConfig 同名 securityFilterChain bean 冲突）
+ *
+ * app 聚合测试以 identity 的鉴权链为主，故保留 identity.security.SecurityConfig，
+ * 排除其它服务的安全配置（用正则按包名过滤）。
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan(basePackages = ["com.scx.backend"])
 @ComponentScan(
     basePackages = ["com.scx.backend"],
     excludeFilters = [
+        // 排除各微服务启动主类（避免重复 JPA/auto-config 注册）
         ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = [
             NotificationApplication::class,
             RbacApplication::class,
             IdentityApplication::class,
         ]),
+        // 排除 rbac/file 的安全配置（与 identity 的 securityFilterChain bean 冲突）
+        ComponentScan.Filter(type = FilterType.REGEX, pattern = ["com\\.scx\\.backend\\.rbac\\.security\\..*", "com\\.scx\\.backend\\.file\\.security\\..*"]),
     ],
 )
 class ScxBackendApplication
