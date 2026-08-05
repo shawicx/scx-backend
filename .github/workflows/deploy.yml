@@ -263,20 +263,26 @@ jobs:
             echo "==> 清理悬空镜像"
             docker image prune -f
 
-            # 健康检查：轮询网关 /api/health（最多 120 秒，5 个服务启动需更长时间）
+            # 健康检查：轮询网关 /api/health（最多 180 秒）
+            # /api/health 经网关转发到 identity，需 identity（连 PG+Flyway）与网关都就绪。
+            # 网关启动较慢（buildpack 初始化 + 路由装配约 35s），给足余量。
             echo "==> 健康检查: 轮询 http://localhost:8080/api/health"
-            for i in $(seq 1 24); do
+            for i in $(seq 1 36); do
               if curl -fsS http://localhost:8080/api/health > /dev/null 2>&1; then
                 echo "健康检查通过（第 $((i*5)) 秒）"
                 echo "--- 运行中的服务容器 ---"
                 docker ps --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}"
                 exit 0
               fi
-              echo "  等待服务启动... ($i/24)"
+              echo "  等待服务启动... ($i/36)"
               sleep 5
             done
 
-            echo "ERROR: 健康检查超时（120 秒内网关未就绪）"
+            echo "ERROR: 健康检查超时（180 秒内网关未就绪）"
+            echo "--- 全部容器状态 ---"
+            docker ps -a --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             echo "--- gateway 容器最近日志 ---"
-            docker logs --tail 50 scx-gateway || true
+            docker logs --tail 80 scx-gateway || true
+            echo "--- identity-service 容器最近日志 ---"
+            docker logs --tail 30 scx-identity || true
             exit 1

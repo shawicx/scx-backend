@@ -62,4 +62,14 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
     }
+
+    // 所有 Spring Boot 应用模块统一固化 prod 为默认 profile（镜像内置，不依赖部署时环境变量）。
+    // 仅对应用了 spring-boot 插件的模块生效（common/common-web 等库模块无 bootBuildImage 任务）。
+    // 网关额外的 Netty 直接内存配置见 gateway/build.gradle.kts。
+    pluginManager.withPlugin("org.springframework.boot") {
+        val bootBuildImage = tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage")
+        bootBuildImage.configure {
+            environment.put("SPRING_PROFILES_ACTIVE", "prod")
+        }
+    }
 }

@@ -13,7 +13,6 @@ pluginManagement {
 // ============================================================
 // 多模块结构（微服务化）
 // ============================================================
-// - app                 过渡用单体模块（承接原 scx-backend 全部源码，逐步拆解后删除）
 // - common              共享契约模块（纯协议层：响应封装/异常/ULID/令牌工具/注解，无 Servlet 依赖）
 // - common-web          Servlet 专属共享组件（GlobalResponseHandler/GlobalExceptionHandler/
 //                       AccessLogInterceptor/AuthContextResolver，依赖 common，供 Servlet 服务使用；
@@ -25,7 +24,6 @@ pluginManagement {
 // - file-service        文件服务（空壳）
 // ============================================================
 include(
-    "app",
     "common",
     "common-web",
     "gateway",
