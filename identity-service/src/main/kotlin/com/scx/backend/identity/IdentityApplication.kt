@@ -8,6 +8,10 @@ import org.springframework.boot.runApplication
  *
  * 扫描根包 com.scx.backend 以发现 common 模块的共享配置与组件
  * （JacksonConfig / GlobalResponseHandler / GlobalExceptionHandler 等）。
+ *
+ * 过渡期 identity 依赖 rbac-service / notification-service（UserService 直连 rbac 表、
+ * 调 notification 发邮件）。rbac/file 的 SecurityConfig 用 @ConditionalOnMissingBean 标注，
+ * 在 identity（已有自己的 SecurityFilterChain）中自动跳过，避免同名 bean 冲突。
  */
 @SpringBootApplication(scanBasePackages = ["com.scx.backend"])
 class IdentityApplication

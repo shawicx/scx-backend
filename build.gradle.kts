@@ -63,13 +63,24 @@ subprojects {
         useJUnitPlatform()
     }
 
-    // 所有 Spring Boot 应用模块统一固化 prod 为默认 profile（镜像内置，不依赖部署时环境变量）。
+    // 所有 Spring Boot 应用模块统一固化 prod profile + 适配内存受限的 ECS。
     // 仅对应用了 spring-boot 插件的模块生效（common/common-web 等库模块无 bootBuildImage 任务）。
-    // 网关额外的 Netty 直接内存配置见 gateway/build.gradle.kts。
+    //
+    // Paketo 内存计算器：固定区域 = DirectMem + Metaspace + CodeCache + (Xss × 线程数)
+    // 必须小于容器可用内存，否则启动直接失败（exit 1，容器无限 Restarting）。
+    // ECS 上 5 个服务容器共享内存，单容器可用内存仅 ~400-540M，默认配置（250 线程 + 240M CodeCache）
+    // 使固定区域达 ~660M 必然超限。通过以下调整把固定区域压到 ~300M：
+    //   1. BPL_JVM_THREAD_COUNT=50（默认 250 → 50，线程栈 250M → 50M）
+    //   2. ReservedCodeCacheSize=128M（默认 240M，128M 足够 Spring Boot 应用）
+    // 让内存计算器有充足空间自适应分配 heap 与 direct memory。
     pluginManager.withPlugin("org.springframework.boot") {
         val bootBuildImage = tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage")
         bootBuildImage.configure {
             environment.put("SPRING_PROFILES_ACTIVE", "prod")
+            environment.put("BPE_DELIM_BPL_JVM_THREAD_COUNT", "")
+            environment.put("BPE_APPEND_BPL_JVM_THREAD_COUNT", "50")
+            environment.put("BPE_DELIM_JAVA_TOOL_OPTIONS", " ")
+            environment.put("BPE_APPEND_JAVA_TOOL_OPTIONS", "-XX:ReservedCodeCacheSize=128M")
         }
     }
 }

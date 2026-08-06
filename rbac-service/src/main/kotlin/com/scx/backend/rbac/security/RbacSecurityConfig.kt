@@ -4,6 +4,7 @@ import com.scx.backend.common.security.AuthContextResolver
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -30,9 +31,14 @@ import org.springframework.web.filter.OncePerRequestFilter
  *
  * 与 identity 不同，rbac 服务不做本地令牌解析——完全信任网关注入的身份头。
  * 与 file-service 的 FileSecurityConfig 保持一致的安全模型。
+ *
+ * @ConditionalOnMissingBean：过渡期 identity 依赖 rbac 模块（直连 rbac 表），rbac 的
+ * SecurityConfig 会被 identity 扫描进来。加此条件后，仅当容器中尚无 SecurityFilterChain
+ * 时（rbac 独立运行）才激活；identity 运行时已有自己的 SecurityFilterChain，本配置自动跳过。
  */
 @Configuration
 @EnableWebSecurity
+@ConditionalOnMissingBean(SecurityFilterChain::class)
 class RbacSecurityConfig {
 
     @Bean

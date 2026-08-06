@@ -5,6 +5,7 @@ import com.scx.backend.common.security.AuthPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -29,9 +30,12 @@ import org.springframework.web.filter.OncePerRequestFilter
  *  - 放行所有请求（强制鉴权集中在网关）
  *
  * 与 identity 不同，文件服务不做本地令牌解析与 DB 管理员回查——完全信任网关注入的身份头。
+ *
+ * @ConditionalOnMissingBean：仅当容器中尚无 SecurityFilterChain 时（file 独立运行）才激活。
  */
 @Configuration
 @EnableWebSecurity
+@ConditionalOnMissingBean(SecurityFilterChain::class)
 class FileSecurityConfig {
 
     @Bean

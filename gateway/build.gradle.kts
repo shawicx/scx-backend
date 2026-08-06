@@ -40,19 +40,5 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
 }
 
-// ============================================================
-// bootBuildImage 配置
-// ============================================================
-// Paketo buildpack 默认给 Netty 直接内存仅 10M（JVM 默认），对 WebFlux 网关严重不足，
-// 并发转发请求时 Netty 申请 direct buffer 失败触发 OOM（ExitOnOutOfMemoryError）导致进程崩溃。
-// 显式设置 -XX:MaxDirectMemorySize=256M 保证 Netty 有充足的直接内存处理 I/O buffer。
-// 同时固化 prod 为默认 profile（镜像内置，不依赖部署时环境变量）。
-// 参见 paketo.io/docs/reference/java-reference/#memory-calculator
-// ============================================================
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
-    environment = mapOf(
-        "SPRING_PROFILES_ACTIVE" to "prod",
-        "BPE_DELIM_JAVA_TOOL_OPTIONS" to " ",
-        "BPE_APPEND_JAVA_TOOL_OPTIONS" to "-XX:MaxDirectMemorySize=256M",
-    )
-}
+// bootBuildImage 的 prod profile 与线程数配置由根 build.gradle.kts 的 subprojects 统一处理。
+// 网关作为 WebFlux 服务，线程数 50 足够（reactive 栈不依赖大量请求线程）。
