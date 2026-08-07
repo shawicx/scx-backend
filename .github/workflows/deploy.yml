@@ -215,7 +215,10 @@ jobs:
             stop_and_rm scx-backend
             
             # docker -e 是 Docker 标准行为，优先级高于镜像内环境变量
-            JVM_ENV="-e BPL_JVM_THREAD_COUNT=50 -e JAVA_TOOL_OPTIONS=-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=10m -Xss512k"
+            JVM_ENV=(
+              -e "BPL_JVM_THREAD_COUNT=50"
+              -e "JAVA_TOOL_OPTIONS=-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=10m -Xss512k"
+            )
 
             echo "==> 启动 identity-service (3001)"
             stop_and_rm scx-identity
@@ -224,7 +227,7 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              "${JVM_ENV[@]}" \
               "$NS/identity-service:latest"
 
             echo "==> 启动 rbac-service (3002)"
@@ -234,7 +237,7 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              "${JVM_ENV[@]}" \
               "$NS/rbac-service:latest"
 
             echo "==> 启动 notification-service (3003)"
@@ -244,7 +247,7 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              "${JVM_ENV[@]}" \
               "$NS/notification-service:latest"
 
             echo "==> 启动 file-service (3004)"
@@ -254,7 +257,7 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              "${JVM_ENV[@]}" \
               "$NS/file-service:latest"
 
             # 网关依赖下游服务，最后启动；.env 中 IDENTITY/RBAC/NOTIFICATION/FILE_BASE_URL
@@ -266,7 +269,7 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              "${JVM_ENV[@]}" \
               "$NS/gateway:latest"
 
             echo "==> 清理悬空镜像"
