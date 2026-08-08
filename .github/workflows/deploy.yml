@@ -125,176 +125,176 @@ jobs:
           # 5. 启动 5 个服务容器（仅 gateway 对外，--env-file 注入生产配置）
           # 6. 健康检查（轮询网关 /api/health）
           script: |
-            set -euo pipefail
-
-            NS="$ACR_REGISTRY/$ACR_NAMESPACE"
-            ENV_FILE="$ECS_ENV_FILE"
-            SERVICES=(gateway identity-service rbac-service notification-service file-service)
-
-            echo "==> 校验 .env 文件存在: $ENV_FILE"
-            if [ ! -f "$ENV_FILE" ]; then
-              echo "ERROR: ECS 上的 .env 文件不存在: $ENV_FILE"
-              echo "请先在 ECS 上创建该文件并写入生产环境变量（参考 .env.example）"
-              exit 1
-            fi
-
-            echo "==> 登录阿里云 ACR"
-            docker login "$ACR_REGISTRY" -u "$ACR_USERNAME" -p "$ACR_PASSWORD"
-
-            # 拉取全部服务镜像
-            for SVC in "${SERVICES[@]}"; do
-              echo "==> 拉取镜像: $NS/$SVC:latest"
-              docker pull "$NS/$SVC:latest"
-            done
-
-            # ============================================================
-            # 确保依赖容器（PostgreSQL + Redis）运行（幂等）
-            # ============================================================
-            echo "==> 确保依赖容器（PostgreSQL + Redis）运行"
-
-            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-postgres$'; then
-              echo "  PostgreSQL 容器已存在，确保运行中"
-              docker start scx-backend-postgres >/dev/null 2>&1 || true
-            else
-              echo "  PostgreSQL 容器不存在，创建并启动"
-              docker run -d \
-                --name scx-backend-postgres \
-                --network host \
-                --restart unless-stopped \
-                -e POSTGRES_USER=scx \
-                -e POSTGRES_PASSWORD=scx_password \
-                -e POSTGRES_DB=scx-backend \
-                -v scx-backend-postgres-data:/var/lib/postgresql/data \
-                postgres:16-alpine \
-                postgres -c port=5433
-            fi
-
-            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-redis$'; then
-              echo "  Redis 容器已存在，确保运行中"
-              docker start scx-backend-redis >/dev/null 2>&1 || true
-            else
-              echo "  Redis 容器不存在，创建并启动"
-              docker run -d \
-                --name scx-backend-redis \
-                --network host \
-                --restart unless-stopped \
-                -v scx-backend-redis-data:/data \
-                redis:7-alpine \
-                redis-server --port 6388
-            fi
-
-            # 等待 PostgreSQL 就绪
-            echo "==> 等待 PostgreSQL 就绪（最长 60 秒）"
-            for i in $(seq 1 30); do
-              if docker exec scx-backend-postgres pg_isready -U scx -p 5433 >/dev/null 2>&1; then
-                echo "  PostgreSQL 就绪"
-                break
-              fi
-              if [ "$i" -eq 30 ]; then
-                echo "ERROR: PostgreSQL 60 秒内未就绪，终止部署"
-                docker logs --tail 30 scx-backend-postgres || true
-                exit 1
-              fi
-              echo "  等待 PG... ($i/30)"
-              sleep 2
-            done
-
-            # ============================================================
-            # 启动服务容器（先下游后网关）
-            # --network host：各服务 localhost:<port> 互通
-            # --env-file：注入 ECS 本地 .env（含 DB/JWT/MAIL/服务地址等）
-            # ============================================================
-
-            # 通用：停止并删除同名旧容器
-            stop_and_rm() {
-              docker stop "$1" 2>/dev/null || true
-              docker rm   "$1" 2>/dev/null || true
-            }
-            
-            # 迁移清理：移除历史单体容器（首次部署时不存在则自动跳过）
-            stop_and_rm scx-backend
-            
-            # docker -e 是 Docker 标准行为，优先级高于镜像内环境变量
-            JVM_ENV=(
-              -e "BPL_JVM_THREAD_COUNT=50"
-              -e "JAVA_TOOL_OPTIONS=-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=10m -Xss512k"
-            )
-
-            echo "==> 启动 identity-service (3001)"
-            stop_and_rm scx-identity
-            docker run -d \
-              --name scx-identity \
-              --network host \
-              --restart=always \
-              --env-file "$ENV_FILE" \
-              "${JVM_ENV[@]}" \
-              "$NS/identity-service:latest"
-
-            echo "==> 启动 rbac-service (3002)"
-            stop_and_rm scx-rbac
-            docker run -d \
-              --name scx-rbac \
-              --network host \
-              --restart=always \
-              --env-file "$ENV_FILE" \
-              "${JVM_ENV[@]}" \
-              "$NS/rbac-service:latest"
-
-            echo "==> 启动 notification-service (3003)"
-            stop_and_rm scx-notification
-            docker run -d \
-              --name scx-notification \
-              --network host \
-              --restart=always \
-              --env-file "$ENV_FILE" \
-              "${JVM_ENV[@]}" \
-              "$NS/notification-service:latest"
-
-            echo "==> 启动 file-service (3004)"
-            stop_and_rm scx-file
-            docker run -d \
-              --name scx-file \
-              --network host \
-              --restart=always \
-              --env-file "$ENV_FILE" \
-              "${JVM_ENV[@]}" \
-              "$NS/file-service:latest"
+                    set -euo pipefail
+                    
+                    NS="$ACR_REGISTRY/$ACR_NAMESPACE"
+                    ENV_FILE="$ECS_ENV_FILE"
+                    SERVICES=(gateway identity-service rbac-service notification-service file-service)
+                    
+                    echo "==> 校验 .env 文件存在: $ENV_FILE"
+                    if [ ! -f "$ENV_FILE" ]; then
+                    echo "ERROR: ECS 上的 .env 文件不存在: $ENV_FILE"
+                    echo "请先在 ECS 上创建该文件并写入生产环境变量（参考 .env.example）"
+                    exit 1
+                    fi
+                    
+                    echo "==> 登录阿里云 ACR"
+                    docker login "$ACR_REGISTRY" -u "$ACR_USERNAME" -p "$ACR_PASSWORD"
+                    
+                    # 拉取全部服务镜像
+                    for SVC in "${SERVICES[@]}"; do
+                    echo "==> 拉取镜像: $NS/$SVC:latest"
+                    docker pull "$NS/$SVC:latest"
+                    done
+                    
+                    # ============================================================
+                    # 确保依赖容器（PostgreSQL + Redis）运行（幂等）
+                    # ============================================================
+                    echo "==> 确保依赖容器（PostgreSQL + Redis）运行"
+                    
+                    if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-postgres$'; then
+                    echo "  PostgreSQL 容器已存在，确保运行中"
+                    docker start scx-backend-postgres >/dev/null 2>&1 || true
+                    else
+                    echo "  PostgreSQL 容器不存在，创建并启动"
+                    docker run -d \
+                    --name scx-backend-postgres \
+                    --network host \
+                    --restart unless-stopped \
+                    -e POSTGRES_USER=scx \
+                    -e POSTGRES_PASSWORD=scx_password \
+                    -e POSTGRES_DB=scx-backend \
+                    -v scx-backend-postgres-data:/var/lib/postgresql/data \
+                    postgres:16-alpine \
+                    postgres -c port=5433
+                    fi
+                    
+                    if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-redis$'; then
+                    echo "  Redis 容器已存在，确保运行中"
+                    docker start scx-backend-redis >/dev/null 2>&1 || true
+                    else
+                    echo "  Redis 容器不存在，创建并启动"
+                    docker run -d \
+                    --name scx-backend-redis \
+                    --network host \
+                    --restart unless-stopped \
+                    -v scx-backend-redis-data:/data \
+                    redis:7-alpine \
+                    redis-server --port 6388
+                    fi
+                    
+                    # 等待 PostgreSQL 就绪
+                    echo "==> 等待 PostgreSQL 就绪（最长 60 秒）"
+                    for i in $(seq 1 30); do
+                    if docker exec scx-backend-postgres pg_isready -U scx -p 5433 >/dev/null 2>&1; then
+                    echo "  PostgreSQL 就绪"
+                    break
+                    fi
+                    if [ "$i" -eq 30 ]; then
+                    echo "ERROR: PostgreSQL 60 秒内未就绪，终止部署"
+                    docker logs --tail 30 scx-backend-postgres || true
+                    exit 1
+                    fi
+                    echo "  等待 PG... ($i/30)"
+                    sleep 2
+                    done
+                    
+                    # ============================================================
+                    # 启动服务容器（先下游后网关）
+                    # --network host：各服务 localhost:<port> 互通
+                    # --env-file：注入 ECS 本地 .env（含 DB/JWT/MAIL/服务地址等）
+                    # ============================================================
+                    
+                    # 通用：停止并删除同名旧容器
+                    stop_and_rm() {
+                    docker stop "$1" 2>/dev/null || true
+                    docker rm   "$1" 2>/dev/null || true
+                    }
+                    
+                    # 迁移清理：移除历史单体容器（首次部署时不存在则自动跳过）
+                    stop_and_rm scx-backend
+                    
+                    # docker -e 是 Docker 标准行为，优先级高于镜像内环境变量
+            #            JVM_ENV=(
+            #              -e "BPL_JVM_THREAD_COUNT=50"
+            #              -e "JAVA_TOOL_OPTIONS=-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=10m -Xss512k"
+            #            )
+                    
+                    echo "==> 启动 identity-service (3001)"
+                    stop_and_rm scx-identity
+                    docker run -d \
+                    --name scx-identity \
+                    --network host \
+                    --restart=always \
+                    --env-file "$ENV_FILE" \
+                    -m 1024m \
+                    "$NS/identity-service:latest"
+                    
+                    echo "==> 启动 rbac-service (3002)"
+                    stop_and_rm scx-rbac
+                    docker run -d \
+                    --name scx-rbac \
+                    --network host \
+                    --restart=always \
+                    --env-file "$ENV_FILE" \
+                    -m 1024m \
+                    "$NS/rbac-service:latest"
+                    
+                    echo "==> 启动 notification-service (3003)"
+                    stop_and_rm scx-notification
+                    docker run -d \
+                    --name scx-notification \
+                    --network host \
+                    --restart=always \
+                    --env-file "$ENV_FILE" \
+                    -m 1024m \
+                    "$NS/notification-service:latest"
+                    
+                    echo "==> 启动 file-service (3004)"
+                    stop_and_rm scx-file
+                    docker run -d \
+                    --name scx-file \
+                    --network host \
+                    --restart=always \
+                    --env-file "$ENV_FILE" \
+                    -m 1024m \
+                    "$NS/file-service:latest"
 
             # 网关依赖下游服务，最后启动；.env 中 IDENTITY/RBAC/NOTIFICATION/FILE_BASE_URL
             # 指向 http://localhost:<port>（host 网络下各服务互通）
-            echo "==> 启动 gateway (8080)"
-            stop_and_rm scx-gateway
-            docker run -d \
-              --name scx-gateway \
-              --network host \
-              --restart=always \
-              --env-file "$ENV_FILE" \
-              "${JVM_ENV[@]}" \
-              "$NS/gateway:latest"
-
-            echo "==> 清理悬空镜像"
-            docker image prune -f
+                    echo "==> 启动 gateway (8080)"
+                    stop_and_rm scx-gateway
+                    docker run -d \
+                    --name scx-gateway \
+                    --network host \
+                    --restart=always \
+                    --env-file "$ENV_FILE" \
+                    -m 1024m \
+                    "$NS/gateway:latest"
+                    
+                    echo "==> 清理悬空镜像"
+                    docker image prune -f
 
             # 健康检查：轮询网关 /api/health（最多 180 秒）
             # /api/health 经网关转发到 identity，需 identity（连 PG+Flyway）与网关都就绪。
             # 网关启动较慢（buildpack 初始化 + 路由装配约 35s），给足余量。
-            echo "==> 健康检查: 轮询 http://localhost:8080/api/health"
-            for i in $(seq 1 36); do
-              if curl -fsS http://localhost:8080/api/health > /dev/null 2>&1; then
-                echo "健康检查通过（第 $((i*5)) 秒）"
-                echo "--- 运行中的服务容器 ---"
-                docker ps --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}"
-                exit 0
-              fi
-              echo "  等待服务启动... ($i/36)"
-              sleep 5
-            done
-
-            echo "ERROR: 健康检查超时（180 秒内网关未就绪）"
-            echo "--- 全部容器状态 ---"
-            docker ps -a --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "--- gateway 容器最近日志 ---"
-            docker logs --tail 80 scx-gateway || true
-            echo "--- identity-service 容器最近日志 ---"
-            docker logs --tail 30 scx-identity || true
-            exit 1
+                    echo "==> 健康检查: 轮询 http://localhost:8080/api/health"
+                    for i in $(seq 1 36); do
+                    if curl -fsS http://localhost:8080/api/health > /dev/null 2>&1; then
+                    echo "健康检查通过（第 $((i*5)) 秒）"
+                    echo "--- 运行中的服务容器 ---"
+                    docker ps --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}"
+                    exit 0
+                    fi
+                    echo "  等待服务启动... ($i/36)"
+                    sleep 5
+                    done
+                    
+                    echo "ERROR: 健康检查超时（180 秒内网关未就绪）"
+                    echo "--- 全部容器状态 ---"
+                    docker ps -a --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                    echo "--- gateway 容器最近日志 ---"
+                    docker logs --tail 80 scx-gateway || true
+                    echo "--- identity-service 容器最近日志 ---"
+                    docker logs --tail 30 scx-identity || true
+                    exit 1
