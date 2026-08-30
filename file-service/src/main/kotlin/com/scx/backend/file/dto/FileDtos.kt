@@ -1,8 +1,8 @@
 package com.scx.backend.file.dto
 
+import com.scx.backend.file.entity.File
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 
 /** 文件查询参数 */
@@ -64,7 +64,29 @@ data class FileResponseDto(
 
     @Schema(description = "删除时间（逻辑删除）")
     val deletedAt: LocalDateTime?,
-)
+) {
+    companion object {
+        /**
+         * @description 从文件实体构造响应 DTO
+         * @param file 文件实体
+         * @param url 访问 URL，默认使用实体入库的逻辑地址，可传预签名直链覆盖
+         * @returns FileResponseDto 文件信息响应
+         *
+         * @example FileResponseDto.from(file, storageService.presignedGetUrl(file.path))
+         */
+        fun from(file: File, url: String = file.url) = FileResponseDto(
+            id = file.id,
+            userId = file.userId,
+            originalName = file.originalName,
+            mimeType = file.mimeType,
+            size = file.size,
+            path = file.path,
+            url = url,
+            createdAt = file.createdAt,
+            deletedAt = file.deletedAt,
+        )
+    }
+}
 
 /** 文件列表响应 */
 @Schema(description = "文件列表响应")

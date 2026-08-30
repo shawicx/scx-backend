@@ -17,37 +17,45 @@ spring:
   # Spring Cloud Gateway 路由配置
   # 所有路由均转发到下游服务的 /api 前缀（下游 context-path=/api）
   # 网关本身不加 /api 前缀（直接透传），下游服务用 context-path 匹配
+  # 注意：Spring Cloud Gateway 5.x（2025.1.x）属性命名空间已从 spring.cloud.gateway.*
+  # 迁移为 spring.cloud.gateway.server.webflux.*，旧前缀会被静默忽略（路由不生效）
   cloud:
     gateway:
-      # 全局 CORS（网关层统一处理跨域，下游服务各自保留兼容 CORS 即可）
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowed-origin-patterns: "*"
-            allowed-methods: [GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS]
-            allowed-headers: [Content-Type, Authorization]
-            allow-credentials: true
-      routes:
-        # 身份认证服务：用户、登录、令牌、健康检查
-        - id: identity-service
-          uri: ${IDENTITY_BASE_URL:http://localhost:3001}
-          predicates:
-            - Path=/api/users/**,/api/health,/api/health/**
-        # 角色权限服务
-        - id: rbac-service
-          uri: ${RBAC_BASE_URL:http://localhost:3002}
-          predicates:
-            - Path=/api/roles/**,/api/permissions/**
-        # 通知服务：邮件
-        - id: notification-service
-          uri: ${NOTIFICATION_BASE_URL:http://localhost:3003}
-          predicates:
-            - Path=/api/mail/**
-        # 文件服务
-        - id: file-service
-          uri: ${FILE_BASE_URL:http://localhost:3004}
-          predicates:
-            - Path=/api/files/**
+      server:
+        webflux:
+          # 去重下游服务与网关重复添加的 CORS 响应头（网关 globalcors 与下游
+          # SecurityConfig 的 CorsConfigurationSource 各加一次，双头会被浏览器拒绝）
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+          # 全局 CORS（网关层统一处理跨域，下游服务各自保留兼容 CORS 即可）
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns: "*"
+                allowed-methods: [GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS]
+                allowed-headers: [Content-Type, Authorization]
+                allow-credentials: true
+          routes:
+            # 身份认证服务：用户、登录、令牌、健康检查
+            - id: identity-service
+              uri: ${IDENTITY_BASE_URL:http://localhost:3001}
+              predicates:
+                - Path=/api/users/**,/api/health,/api/health/**
+            # 角色权限服务
+            - id: rbac-service
+              uri: ${RBAC_BASE_URL:http://localhost:3002}
+              predicates:
+                - Path=/api/roles/**,/api/permissions/**
+            # 通知服务：邮件
+            - id: notification-service
+              uri: ${NOTIFICATION_BASE_URL:http://localhost:3003}
+              predicates:
+                - Path=/api/mail/**
+            # 文件服务
+            - id: file-service
+              uri: ${FILE_BASE_URL:http://localhost:3004}
+              predicates:
+                - Path=/api/files/**
 
 # JWT 密钥（必须与 identity 服务一致，否则验签失败）
 jwt:

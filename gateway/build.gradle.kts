@@ -23,6 +23,7 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // common 模块传递引入了 spring-boot-starter-web（Tomcat/Servlet 栈）。
     // 网关强制 WebFlux（Netty），必须排除 Servlet 容器，否则 Spring Boot 会优先选 Tomcat

@@ -112,7 +112,7 @@ scx-backend/
     │   ├── SmtpMailService.kt   # SMTP 实现
     │   ├── StubMailService.kt   # Stub 实现
     │   └── dto/
-    ├── file/                    # 文件（空壳）
+    ├── file/                    # 文件（MinIO 对象存储）
     │   ├── FileController.kt
     │   ├── FileService.kt
     │   └── dto/

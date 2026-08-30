@@ -213,58 +213,71 @@ jobs:
             
             # 迁移清理：移除历史单体容器（首次部署时不存在则自动跳过）
             stop_and_rm scx-backend
-            
+
+            # JVM 内存参数（docker -e 强制注入，绕开 Paketo BPE 机制）：
+            # BPL_JVM_THREAD_COUNT=50（默认 250，线程栈挤占内存）
+            # JAVA_TOOL_OPTIONS 压缩 CodeCache（240M→128M）+ 限制 heap 为容器内存的 50%
+            # --memory 限制每个容器内存，让 Paketo memory-calculator 在有限空间内合理分配。
+            # ECS 总内存约 4G，分配：identity 640m（最重，含 JPA+Security+Mail），
+            # 其余各 512m。5 容器合计 ~2.7G + PG/Redis/前端 ~1G + 系统 ~300M ≈ 4G。
+            JVM_ENV="-e BPL_JVM_THREAD_COUNT=50 -e JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50"
+
             echo "==> 启动 identity-service (3001)"
             stop_and_rm scx-identity
             docker run -d \
-            --name scx-identity \
-            --network host \
-            --restart=always \
-            --env-file "$ENV_FILE" \
-            -m 1024m \
-            "$NS/identity-service:latest"
-            
+              --name scx-identity \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              $JVM_ENV \
+              -m 640m \
+              "$NS/identity-service:latest"
+
             echo "==> 启动 rbac-service (3002)"
             stop_and_rm scx-rbac
             docker run -d \
-            --name scx-rbac \
-            --network host \
-            --restart=always \
-            --env-file "$ENV_FILE" \
-            -m 1024m \
-            "$NS/rbac-service:latest"
-            
+              --name scx-rbac \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              $JVM_ENV \
+              -m 512m \
+              "$NS/rbac-service:latest"
+
             echo "==> 启动 notification-service (3003)"
             stop_and_rm scx-notification
             docker run -d \
-            --name scx-notification \
-            --network host \
-            --restart=always \
-            --env-file "$ENV_FILE" \
-            -m 1024m \
-            "$NS/notification-service:latest"
-            
+              --name scx-notification \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              $JVM_ENV \
+              -m 512m \
+              "$NS/notification-service:latest"
+
             echo "==> 启动 file-service (3004)"
             stop_and_rm scx-file
             docker run -d \
-            --name scx-file \
-            --network host \
-            --restart=always \
-            --env-file "$ENV_FILE" \
-            -m 1024m \
-            "$NS/file-service:latest"
+              --name scx-file \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              $JVM_ENV \
+              -m 512m \
+              "$NS/file-service:latest"
 
             # 网关依赖下游服务，最后启动；.env 中 IDENTITY/RBAC/NOTIFICATION/FILE_BASE_URL
             # 指向 http://localhost:<port>（host 网络下各服务互通）
             echo "==> 启动 gateway (8080)"
             stop_and_rm scx-gateway
             docker run -d \
-            --name scx-gateway \
-            --network host \
-            --restart=always \
-            --env-file "$ENV_FILE" \
-            -m 1024m \
-            "$NS/gateway:latest"
+              --name scx-gateway \
+              --network host \
+              --restart=always \
+              --env-file "$ENV_FILE" \
+              $JVM_ENV \
+              -m 512m \
+              "$NS/gateway:latest"
             
             echo "==> 清理悬空镜像"
             docker image prune -f
@@ -287,8 +300,12 @@ jobs:
             echo "ERROR: 健康检查超时（180 秒内网关未就绪）"
             echo "--- 全部容器状态 ---"
             docker ps -a --filter "name=scx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "--- ECS 内存使用 ---"
+            free -h || true
+            echo "--- OS OOM Killer 记录（如 Killed process 出现说明内存不足被系统杀） ---"
+            dmesg | grep -i "killed process\|out of memory" | tail -5 || true
             echo "--- gateway 容器最近日志 ---"
             docker logs --tail 80 scx-gateway || true
             echo "--- identity-service 容器最近日志 ---"
-            docker logs --tail 30 scx-identity || true
+            docker logs --tail 80 scx-identity || true
             exit 1

@@ -1,7 +1,7 @@
 // ============================================================
 // file-service 模块 —— 文件服务
 // ============================================================
-// 职责：文件上传/查询/删除（当前为空壳实现，接口结构保留）。
+// 职责：文件上传/查询/删除（基于 MinIO 对象存储，私有桶 + 预签名 URL 访问）。
 // 专属表：files。
 // Step 1 阶段为空骨架，Step 7 迁入源码。
 // ============================================================
@@ -22,6 +22,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // 对象存储（MinIO，S3 兼容协议）
+    implementation("io.minio:minio:9.0.3")
     // OpenAPI 文档（DTO 的 @Schema/@Operation 注解 + Swagger UI）
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 

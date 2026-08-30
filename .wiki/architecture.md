@@ -114,7 +114,7 @@
 - `seed` → `user`、`role`、`userrole`（启动时初始化超管）
 - `health` → `cache`（Redis 探针）、`EntityManager`（DB 探针）
 
-**独立模块**：`file`（空壳实现）、`cache`（基础封装）、`mail`（独立服务）
+**独立模块**：`file`（基于 MinIO 的文件存储）、`cache`（基础封装）、`mail`（独立服务）
 
 ## 技术选型说明
 

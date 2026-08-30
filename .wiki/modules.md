@@ -13,7 +13,7 @@
 | [rolepermission](#rolepermission-角色权限关联) | `RolePermissionService` | 角色权限关联表 |
 | [userrole](#userrole-用户角色关联) | `UserRoleService` | 用户角色关联表 |
 | [mail](#mail-邮件) | `MailService` / `SmtpMailService` / `StubMailService` | 邮件发送 |
-| [file](#file-文件) | `FileController` / `FileService` | 文件管理（空壳） |
+| [file](#file-文件) | `FileController` / `FileService` / `MinioStorageService` | 文件管理（MinIO 对象存储） |
 | [cache](#cache-缓存) | `CacheService` / `RedisConfig` | Redis 封装 |
 | [health](#health-健康检查) | `HealthController` / `HealthService` | 业务侧健康检查 |
 | [seed](#seed-种子数据) | `SeedService` | 启动时初始化超管 |
@@ -235,20 +235,29 @@
 
 ## file — 文件
 
-**核心类**：`FileController.kt` / `FileService.kt`
+**核心类**：`FileController.kt` / `FileService.kt` / `MinioStorageService.kt`（`storage/`）/ `MinioConfig.kt`（`config/`）
 
-**状态**：⚠️ **空壳实现**。所有方法抛 `NotImplementedError`，待后续接入对象存储（OSS/S3/本地）时填充。
+**职责**：基于 MinIO（S3 兼容协议）的文件上传（单文件/批量）、列表查询、详情与批量软删除。桶保持私有，对外访问一律通过临时预签名 URL（默认 1 小时有效，`MINIO_PRESIGN_EXPIRY` 可配）；数据库 `url` 列持久化逻辑地址。删除为软删除（置 `deletedAt`），MinIO 对象保留。
+
+**关键逻辑**：
+
+- 对象键：`uploads/{yyyy}/{MM}/{dd}/{ULID}.{清洗后的扩展名}`（扩展名白名单 `[a-z0-9]{1,10}`，非法则省略）
+- 上传失败补偿：落库失败移除已上传对象；批量上传任一失败清理全部已上传对象并回滚
+- 桶懒初始化：首次上传时确认/创建桶，启动期不强制依赖 MinIO 可用
+- 双客户端：`minioClient`（服务内部调用）与 `minioUrlClient`（用浏览器可达的 `MINIO_PUBLIC_ENDPOINT` 生成预签名 URL）
+- 数据按当前用户隔离，管理员（`principal.isAdmin`）可跨用户查询/删除
 
 **接口**：
 
 | 接口 | 状态 | 说明 |
 | --- | --- | --- |
-| `/files/upload` | ❌ 未实现 | 上传文件 |
-| `/files/list` | ⚠️ 占位 | 列表查询（基于当前用户隔离） |
-| `/files/info` | ⚠️ 占位 | 文件详情 |
-| `/files/batch-delete` | ⚠️ 占位 | 批量删除 |
+| `POST /files/upload` | ✅ 已实现 | 上传单个文件（multipart `file`），返回文件信息（url 为预签名直链） |
+| `POST /files/batch-upload` | ✅ 已实现 | 批量上传（multipart `files`），全成功或全失败 |
+| `GET /files/list` | ✅ 已实现 | 分页列表（搜索/MIME 过滤/排序，用户隔离，管理员可查全部） |
+| `GET /files/info` | ✅ 已实现 | 文件详情（软删除视为不存在，非本人返回权限不足） |
+| `DELETE /files/batch-delete` | ✅ 已实现 | 批量软删除（跳过非本人/已删除项，返回受影响行数） |
 
-> 实体与数据库表已就绪，业务逻辑待实现。
+> 上传大小限制默认 50MB/单文件、100MB/请求（`FILE_MAX_FILE_SIZE` / `FILE_MAX_REQUEST_SIZE`），超限由全局异常处理器返回 400。MinIO 相关环境变量见 [配置说明](./configuration.md)。
 
 ---
 

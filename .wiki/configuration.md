@@ -149,6 +149,21 @@ MAIL_STARTTLS=true
 
 首次启动时 `SeedService` 创建超级管理员账号 `scx-super-admin@system.internal`，密码取此值。
 
+### MinIO 对象存储（file-service）
+
+| 环境变量 | 配置项 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `MINIO_ENDPOINT` | `minio.endpoint` | `http://localhost:9000` | 服务连接地址（容器环境为服务名，如 `http://minio:9000`） |
+| `MINIO_PUBLIC_ENDPOINT` | `minio.public-endpoint` | 空（复用 endpoint） | 浏览器可达地址，用于生成预签名 URL |
+| `MINIO_ACCESS_KEY` | `minio.access-key` | `scx_minio` | 访问密钥 ⚠️ 生产必替换（与 MINIO_ROOT_USER 一致） |
+| `MINIO_SECRET_KEY` | `minio.secret-key` | `scx_minio_password` | 私有密钥 ⚠️ 生产必替换（与 MINIO_ROOT_PASSWORD 一致） |
+| `MINIO_BUCKET` | `minio.bucket` | `scx-files` | 存储桶名（首次上传时自动创建，保持私有） |
+| `MINIO_PRESIGN_EXPIRY` | `minio.presign-expiry-seconds` | `3600` | 预签名 URL 有效期（秒，MinIO 上限 7 天） |
+| `FILE_MAX_FILE_SIZE` | `spring.servlet.multipart.max-file-size` | `50MB` | 单文件上传上限（超限返回 400） |
+| `FILE_MAX_REQUEST_SIZE` | `spring.servlet.multipart.max-request-size` | `100MB` | 单请求上传上限 |
+
+docker-compose 中的 MinIO 服务：API `9000`、控制台 `9001`（`http://localhost:9001`），root 凭据取 `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`。
+
 ### Swagger / OpenAPI
 
 | 环境变量 | 配置项 | 默认值 | 说明 |
@@ -207,6 +222,7 @@ logging:
 | --- | --- | --- |
 | `JWT_SECRET` | 令牌可被伪造 | 强随机字符串（≥32 字节） |
 | `ADMIN_INITIAL_PASSWORD` | 超管账号可被接管 | 强密码，首次登录后修改 |
+| `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | 对象存储可被接管 | 强密钥对（与 MinIO 服务 root 凭据一致） |
 | `MAIL_PASSWORD` | 邮件发送失败 / 被滥用 | SMTP 授权码，定期轮换 |
 | `DB_PASSWORD` | 数据库可被未授权访问 | 强密码，限制网络访问 |
 

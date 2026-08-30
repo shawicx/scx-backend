@@ -1,7 +1,7 @@
 # ============================================================
 # scx-backend 微服务本地联调编排
 # ============================================================
-# 基础设施：PostgreSQL 16（5433）+ Redis 7（6388）
+# 基础设施：PostgreSQL 16（5433）+ Redis 7（6388）+ MinIO（9000 API / 9001 控制台）
 # 应用服务：gateway(8080) + identity(3001) + rbac(3002) + notification(3003) + file(3004)
 #
 # 使用方式：
@@ -47,6 +47,27 @@ services:
       - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "6388", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # -------------------- 对象存储 --------------------
+  minio:
+    image: minio/minio:latest
+    container_name: scx-backend-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-scx_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-scx_minio_password}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -108,10 +129,18 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       DB_HOST: postgres
       DB_PORT: 5433
+      # 容器内用服务名连接；预签名 URL 用宿主机可达地址生成
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-scx_minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-scx_minio_password}
+      MINIO_BUCKET: ${MINIO_BUCKET:-scx-files}
     ports:
       - "3004:3004"
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -146,3 +175,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  minio-data:

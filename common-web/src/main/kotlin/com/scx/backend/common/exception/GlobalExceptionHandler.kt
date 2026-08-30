@@ -5,9 +5,11 @@ import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 /**
@@ -62,6 +64,42 @@ class GlobalExceptionHandler {
             statusCode = SystemErrorCode.INVALID_PARAMETER.code,
             message = "请求参数错误",
             data = fieldErrors,
+            path = request.requestURI,
+        )
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    /**
+     * 请求体不可读/JSON 解析失败 → 400 INVALID_PARAMETER
+     */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(
+        ex: HttpMessageNotReadableException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse> {
+        logger.warn("请求体解析失败: {} | url={}", ex.message?.lineSequence()?.first(), request.requestURI)
+        val body = ApiResponse.error(
+            statusCode = SystemErrorCode.INVALID_PARAMETER.code,
+            message = "请求体格式错误（JSON 解析失败）",
+            data = null,
+            path = request.requestURI,
+        )
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    /**
+     * 上传文件超出大小限制 → 400 INVALID_PARAMETER
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxUploadSizeExceeded(
+        ex: MaxUploadSizeExceededException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse> {
+        logger.warn("上传文件超出大小限制: {} | url={}", ex.message, request.requestURI)
+        val body = ApiResponse.error(
+            statusCode = SystemErrorCode.INVALID_PARAMETER.code,
+            message = "上传文件超出大小限制",
+            data = null,
             path = request.requestURI,
         )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)

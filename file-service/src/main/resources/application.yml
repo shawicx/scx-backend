@@ -7,6 +7,12 @@ spring:
   config:
     import: "optional:file:.env[.properties]"
 
+  # 上传大小限制（超出由全局异常处理器返回 400）
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_FILE_SIZE:50MB}
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:100MB}
+
   # 数据源（JPA）—— 共享库 + 逻辑隔离：file-service 仅访问 files 表
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_DATABASE:scx-backend}
@@ -55,3 +61,15 @@ logging:
   level:
     root: INFO
     com.scx.backend: DEBUG
+
+# MinIO 对象存储（私有桶，对外访问走预签名 URL）
+minio:
+  # 服务连接地址（容器环境为服务名，如 http://minio:9000）
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  # 浏览器可达地址（用于生成预签名 URL），为空时复用 endpoint
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
+  access-key: ${MINIO_ACCESS_KEY:scx_minio}
+  secret-key: ${MINIO_SECRET_KEY:scx_minio_password}
+  bucket: ${MINIO_BUCKET:scx-files}
+  # 预签名 URL 有效期（秒，默认 1 小时）
+  presign-expiry-seconds: ${MINIO_PRESIGN_EXPIRY:3600}
