@@ -13,6 +13,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6388}
       password: ${REDIS_PASSWORD:}
+      # 逻辑库编号（共享 scx-infra Redis 的 db 隔离：backend=0 / service=1 / stock=2）
+      database: ${REDIS_DATABASE:0}
 
   # Spring Cloud Gateway 路由配置
   # 所有路由均转发到下游服务的 /api 前缀（下游 context-path=/api）

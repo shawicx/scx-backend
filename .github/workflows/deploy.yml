@@ -9,7 +9,7 @@
 #   ./gradlew :<service>:bootBuildImage（5 个服务）
 #   → docker tag → docker push (阿里云 ACR)
 #   → SSH 登录 ECS → docker pull
-#   → 幂等启动 PostgreSQL + Redis 依赖
+#   → 校验共享基础设施（scx-infra）运行
 #   → 启动 5 个服务容器（gateway 对外 8080，其余内部通信）
 #   → 健康检查（轮询网关 /api/health）
 #
@@ -120,10 +120,9 @@ jobs:
           # 远端部署脚本：
           # 1. 校验 .env / 登录 ACR
           # 2. 拉取 5 个服务镜像
-          # 3. 幂等启动 PG + Redis 依赖
-          # 4. 等待 PG 就绪
-          # 5. 启动 5 个服务容器（仅 gateway 对外，--env-file 注入生产配置）
-          # 6. 健康检查（轮询网关 /api/health）
+          # 3. 校验共享基础设施（scx-infra 的 scx-postgres / scx-redis）运行
+          # 4. 启动 5 个服务容器（仅 gateway 对外，--env-file 注入生产配置）
+          # 5. 健康检查（轮询网关 /api/health）
           script: |
             set -euo pipefail
             
@@ -148,55 +147,18 @@ jobs:
             done
             
             # ============================================================
-            # 确保依赖容器（PostgreSQL + Redis）运行（幂等）
+            # 校验共享基础设施（scx-infra）运行
+            # PG/Redis 由 /opt/scx-infra 统一提供：单实例多库（scx-backend /
+            # scx-service / scx-stock）+ Redis db 隔离（backend=0/service=1/stock=2），
+            # host 网络仅绑 127.0.0.1。本脚本不再自行创建 PG/Redis 容器。
             # ============================================================
-            echo "==> 确保依赖容器（PostgreSQL + Redis）运行"
-            
-            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-postgres$'; then
-            echo "  PostgreSQL 容器已存在，确保运行中"
-            docker start scx-backend-postgres >/dev/null 2>&1 || true
-            else
-            echo "  PostgreSQL 容器不存在，创建并启动"
-            docker run -d \
-            --name scx-backend-postgres \
-            --network host \
-            --restart unless-stopped \
-            -e POSTGRES_USER=scx \
-            -e POSTGRES_PASSWORD=scx_password \
-            -e POSTGRES_DB=scx-backend \
-            -v scx-backend-postgres-data:/var/lib/postgresql/data \
-            postgres:16-alpine \
-            postgres -c port=5433
-            fi
-            
-            if docker ps -a --format '{{.Names}}' | grep -q '^scx-backend-redis$'; then
-            echo "  Redis 容器已存在，确保运行中"
-            docker start scx-backend-redis >/dev/null 2>&1 || true
-            else
-            echo "  Redis 容器不存在，创建并启动"
-            docker run -d \
-            --name scx-backend-redis \
-            --network host \
-            --restart unless-stopped \
-            -v scx-backend-redis-data:/data \
-            redis:7-alpine \
-            redis-server --port 6388
-            fi
-            
-            # 等待 PostgreSQL 就绪
-            echo "==> 等待 PostgreSQL 就绪（最长 60 秒）"
-            for i in $(seq 1 30); do
-            if docker exec scx-backend-postgres pg_isready -U scx -p 5433 >/dev/null 2>&1; then
-            echo "  PostgreSQL 就绪"
-            break
-            fi
-            if [ "$i" -eq 30 ]; then
-            echo "ERROR: PostgreSQL 60 秒内未就绪，终止部署"
-            docker logs --tail 30 scx-backend-postgres || true
+            echo "==> 校验共享基础设施容器（scx-postgres / scx-redis）"
+            for C in scx-postgres scx-redis; do
+            if ! docker ps --format '{{.Names}}' | grep -q "^${C}$"; then
+            echo "ERROR: 共享容器 $C 未运行"
+            echo "请先在 ECS 上部署 scx-infra：cd /opt/scx-infra && docker compose up -d"
             exit 1
             fi
-            echo "  等待 PG... ($i/30)"
-            sleep 2
             done
             
             # ============================================================

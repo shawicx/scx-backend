@@ -35,6 +35,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6388}
       password: ${REDIS_PASSWORD:}
+      # 逻辑库编号（共享 scx-infra Redis 的 db 隔离：backend=0 / service=1 / stock=2）
+      database: ${REDIS_DATABASE:0}
 
   # 邮件（过渡期 identity 依赖 notification 模块的 MailService 实现，
   # 需 mail.enabled 触发其条件装配。Step 8 后改为 RestClient 调 notification）
