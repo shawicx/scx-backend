@@ -182,7 +182,9 @@ jobs:
             # --memory 限制每个容器内存，让 Paketo memory-calculator 在有限空间内合理分配。
             # ECS 总内存约 4G，分配：identity 640m（最重，含 JPA+Security+Mail），
             # 其余各 512m。5 容器合计 ~2.7G + PG/Redis/前端 ~1G + 系统 ~300M ≈ 4G。
-            JVM_ENV="-e BPL_JVM_THREAD_COUNT=50 -e JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50"
+            # 注意：参数必须内联到各 docker run，不能收进变量无引号展开——
+            # JAVA_TOOL_OPTIONS 的值含空格，word-splitting 会把 -XX:* 拆散泄漏成
+            # docker 的 flag（unknown shorthand flag: 'X'），导致部署失败。
 
             echo "==> 启动 identity-service (3001)"
             stop_and_rm scx-identity
@@ -191,7 +193,8 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              -e BPL_JVM_THREAD_COUNT=50 \
+              -e "JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50" \
               -m 640m \
               "$NS/identity-service:latest"
 
@@ -202,7 +205,8 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              -e BPL_JVM_THREAD_COUNT=50 \
+              -e "JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50" \
               -m 512m \
               "$NS/rbac-service:latest"
 
@@ -213,7 +217,8 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              -e BPL_JVM_THREAD_COUNT=50 \
+              -e "JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50" \
               -m 512m \
               "$NS/notification-service:latest"
 
@@ -224,7 +229,8 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              -e BPL_JVM_THREAD_COUNT=50 \
+              -e "JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50" \
               -m 512m \
               "$NS/file-service:latest"
 
@@ -237,7 +243,8 @@ jobs:
               --network host \
               --restart=always \
               --env-file "$ENV_FILE" \
-              $JVM_ENV \
+              -e BPL_JVM_THREAD_COUNT=50 \
+              -e "JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=128M -XX:MaxRAMPercentage=50" \
               -m 512m \
               "$NS/gateway:latest"
             
