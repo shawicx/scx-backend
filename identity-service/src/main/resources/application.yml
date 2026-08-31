@@ -82,6 +82,9 @@ swagger:
 springdoc:
   api-docs:
     path: /v3/api-docs
+  # 过渡期 identity 打包了 rbac/notification（进程内耦合），全包扫描会把它们的控制器带进文档；
+  # 各服务 Swagger 只展示自身接口，故限定扫描 identity 包（Step 6/8 解耦后此行可保留亦可移除）
+  packages-to-scan: com.scx.backend.identity
   swagger-ui:
     path: /swagger-ui.html
 
