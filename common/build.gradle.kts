@@ -25,6 +25,9 @@ dependencies {
     // Jackson（TokenCodec/JacksonConfig 需要）。用 api 暴露：TokenCodec 的方法签名
     // 暴露了 ObjectMapper，消费方编译时需要 jackson 类型可见。
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
-    // spring-context（JacksonConfig 的 @Configuration/@Bean）
+    // spring-context（JacksonConfig 的 @Configuration/@Bean；StartupEnvironmentLogger
+    // 的 @Component + ContextRefreshedEvent）
     implementation("org.springframework:spring-context")
+    // slf4j API（StartupEnvironmentLogger 日志门面；实现由各服务自带，本模块不绑定实现）
+    implementation("org.slf4j:slf4j-api")
 }
