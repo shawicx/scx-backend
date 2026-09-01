@@ -30,8 +30,9 @@ scx-backend/
 ├── rbac-service/          # 角色权限（3002：角色/树形权限/关联表）
 ├── notification-service/  # 邮件通知（3003，无数据库）
 ├── file-service/          # 文件存储（3004，MinIO）
-├── docker-compose.yml     # 本地全栈编排（PG/Redis/MinIO + 5 个应用服务）
-└── .github/workflows/     # CI/CD（push main → 阿里云 ACR → ECS 自动部署）
+├── docker-compose.yml       # 全栈自带基础设施编排（遗留；与本机 scx-infra 端口互斥）
+├── docker-compose.local.yml # 本机容器直连 ECS 基础设施（仅 5 个应用服务）
+└── .github/workflows/       # CI/CD（仅手动触发；原 push 自动部署版本备份于 deploy.yml.bak）
 ```
 
 ## 功能模块
@@ -55,18 +56,25 @@ cd scx-backend
 cp .env.example .env   # 按需修改（数据库、Redis、JWT、MinIO、邮件等）
 ```
 
-### 2. 启动（二选一）
+### 2. 启动（按场景选择）
 
 ```bash
-# 方式 A：docker compose 全栈（PG:5433 / Redis:6388 / MinIO:9000 + 5 个服务）
+# 方式 A（日常开发，推荐）：本机 scx-infra 提供基础设施，服务宿主机跑（连本地库）
+#   前置：cd scx-infra && docker compose up -d（PG:5433 / Redis:6388；MinIO 用 .env 里的 ECS 地址）
+./gradlew :identity-service:bootRun   # 需要哪个跑哪个（Gateway/Rbac/Notification/File 同理）
+
+# 方式 B（容器化，直连 ECS 生产基础设施 120.77.144.112:5433/6388）
 ./gradlew :gateway:bootBuildImage :identity-service:bootBuildImage \
   :rbac-service:bootBuildImage :notification-service:bootBuildImage \
   :file-service:bootBuildImage -x test
-docker compose up -d
+docker compose -f docker-compose.local.yml up -d
 
-# 方式 B：只起基础设施，服务用 IDEA 运行各主类（推荐日常开发）
-docker compose up -d postgres redis minio
+# 方式 C（遗留全栈）：自带 PG/Redis/MinIO 的 docker-compose.yml
+#   需先停本机 scx-infra（端口互斥）；且其镜像 tag 写的 0.0.1-SNAPSHOT 与
+#   Boot 4 构建产出的 latest 不符，需自行 retag，一般不再使用
 ```
+
+方式 A/B 服务端口相同（8080/3001-3004），**不可同时启动**。每个服务启动成功后会打印环境摘要（连接的 DB/Redis/MinIO/下游地址），连远程基础设施时附 ⚠ 提示。
 
 对外入口：`http://localhost:8080/api`（网关）。各服务需单独启动（`IdentityApplication` / `RbacApplication` / `NotificationApplication` / `FileApplication` / `GatewayApplication`）。
 

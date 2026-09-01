@@ -2,8 +2,8 @@
 # @description SCX Backend 微服务自动部署工作流
 # ------------------------------------------------------------
 # 触发条件：
-#   - workflow_dispatch：手动触发（紧急部署 / 重试 / 回滚）
-#   - push 到 main 不再触发部署（backend 已本机化开发，ECS 容器默认停用）
+#   - push 到 main 分支：构建 5 个服务镜像 → 推送 ACR → SSH 部署到 ECS
+#   - workflow_dispatch：手动触发（紧急重试/回滚）
 #
 # 部署链路（多服务）：
 #   ./gradlew :<service>:bootBuildImage（5 个服务）
@@ -29,9 +29,9 @@
 
 name: Deploy to Aliyun ECS
 
-# 2026-09-01 起 push 不再自动部署；需要恢复时手动 Run workflow，
-# 或用同目录 deploy.yml.bak 还原原 push 触发版本
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 # 最小权限：两个 job 均不使用 GITHUB_TOKEN（ACR/ECS 凭证来自 secrets），
