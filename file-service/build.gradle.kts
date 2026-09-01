@@ -16,6 +16,10 @@ plugins {
 dependencies {
     implementation(project(":common-web"))
 
+    // 审计日志共享组件（操作/登录日志实体、仓库与 V2 建表迁移）：
+    // 共享库 flyway_schema_history 下 V2 必须与本服务解析一致，否则启动校验失败
+    implementation(project(":common-audit"))
+
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")

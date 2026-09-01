@@ -16,6 +16,10 @@ plugins {
 dependencies {
     implementation(project(":common-web"))
 
+    // 审计日志共享组件（操作/登录日志实体、仓库与 V2 建表迁移），
+    // 日志查询接口（/api/logs/**）由本服务承载
+    implementation(project(":common-audit"))
+
     // 过渡：identity 的 UserService/SeedService 仍直连 rbac 表（角色/权限查询），
     // 并调用 notification 发邮件。Step 6 网关化后改为 RestClient 跨服务调用，
     // 届时移除这两个依赖。

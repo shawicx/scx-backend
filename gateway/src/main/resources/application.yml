@@ -38,11 +38,11 @@ spring:
                 allowed-headers: [Content-Type, Authorization]
                 allow-credentials: true
           routes:
-            # 身份认证服务：用户、登录、令牌、健康检查
+            # 身份认证服务：用户、登录、令牌、健康检查、审计日志查询
             - id: identity-service
               uri: ${IDENTITY_BASE_URL:http://localhost:3001}
               predicates:
-                - Path=/api/users/**,/api/health,/api/health/**
+                - Path=/api/users/**,/api/health,/api/health/**,/api/logs/**
             # 角色权限服务
             - id: rbac-service
               uri: ${RBAC_BASE_URL:http://localhost:3002}
