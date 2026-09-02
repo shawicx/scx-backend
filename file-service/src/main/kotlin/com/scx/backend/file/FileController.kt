@@ -3,6 +3,7 @@ package com.scx.backend.file
 import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.security.AuthPrincipal
+import com.scx.backend.commonaudit.annotation.OperationLog
 import com.scx.backend.file.dto.DeleteFilesDto
 import com.scx.backend.file.dto.FileListResponseDto
 import com.scx.backend.file.dto.FileResponseDto
@@ -36,6 +37,7 @@ class FileController(
     private val fileService: FileService,
 ) {
 
+    @OperationLog(module = "文件管理", action = "上传文件")
     @Operation(summary = "上传文件", description = "上传单个文件到对象存储，返回文件信息（url 为临时预签名直链）")
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun uploadFile(
@@ -43,6 +45,7 @@ class FileController(
         @AuthenticationPrincipal principal: AuthPrincipal?,
     ): FileResponseDto = fileService.uploadFile(requirePrincipal(principal).userId, file.toUploadedFile())
 
+    @OperationLog(module = "文件管理", action = "批量上传文件")
     @Operation(summary = "批量上传文件", description = "一次上传多个文件到对象存储，返回文件信息列表（url 为临时预签名直链）")
     @PostMapping("/batch-upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun uploadFiles(
@@ -67,6 +70,7 @@ class FileController(
         return fileService.getFile(id, user.userId, user.isAdmin)
     }
 
+    @OperationLog(module = "文件管理", action = "批量删除文件")
     @Operation(summary = "批量删除文件", description = "逻辑删除当前用户的多个文件，返回受影响行数")
     @DeleteMapping("/batch-delete")
     fun deleteFiles(

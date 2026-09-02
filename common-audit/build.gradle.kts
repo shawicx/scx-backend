@@ -24,5 +24,10 @@ dependencies {
     api(project(":common-web"))
     // ClientInfo 扩展函数需要 Servlet API（common-web 的 starter-web 为 implementation，不传递）
     implementation("jakarta.servlet:jakarta.servlet-api")
+    // 切面需要 RequestContextHolder / MultipartFile（spring-web，版本由 BOM 管理）
+    implementation("org.springframework:spring-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // 操作日志切面：Spring Boot 4 已移除 spring-boot-starter-aop，
+    // 直接引入 aspectjweaver（版本由 Boot BOM 管理）即可激活 @Aspect 代理
+    implementation("org.aspectj:aspectjweaver")
 }

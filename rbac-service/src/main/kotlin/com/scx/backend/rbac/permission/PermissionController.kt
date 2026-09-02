@@ -5,6 +5,7 @@ import com.scx.backend.rbac.permission.dto.PermissionQueryDto
 import com.scx.backend.rbac.permission.dto.PermissionResponseDto
 import com.scx.backend.rbac.permission.dto.UpdatePermissionDto
 import com.scx.backend.common.dto.MessageDto
+import com.scx.backend.commonaudit.annotation.OperationLog
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController
 class PermissionController(
     private val permissionService: PermissionService,
 ) {
+    @OperationLog(module = "权限管理", action = "创建权限")
     @Operation(summary = "创建权限", description = "新建一个权限节点，类型为 MENU 或 BUTTON")
     @PostMapping("/create")
     fun create(@Valid @RequestBody dto: CreatePermissionDto): PermissionResponseDto =
@@ -70,6 +72,7 @@ class PermissionController(
     fun findById(@Parameter(description = "权限 ID") @RequestParam id: String): PermissionResponseDto =
         permissionService.findById(id)
 
+    @OperationLog(module = "权限管理", action = "更新权限")
     @Operation(summary = "更新权限", description = "根据权限 ID 更新权限信息")
     @PutMapping("/update")
     fun update(@Valid @RequestBody dto: UpdatePermissionDto): PermissionResponseDto =
@@ -97,6 +100,7 @@ class PermissionController(
     fun getButtonsByMenuId(@Parameter(description = "菜单 ID") @PathVariable menuId: String) =
         permissionService.getButtonsByMenuId(menuId)
 
+    @OperationLog(module = "权限管理", action = "删除权限")
     @Operation(summary = "删除权限", description = "级联删除权限节点及其子节点")
     @DeleteMapping("/delete")
     fun delete(@Parameter(description = "权限 ID") @RequestParam id: String): MessageDto {

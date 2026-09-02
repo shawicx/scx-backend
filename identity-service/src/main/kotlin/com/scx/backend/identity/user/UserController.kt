@@ -6,6 +6,7 @@ import com.scx.backend.common.dto.MessageDto
 import com.scx.backend.common.security.Admin
 import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.common.util.IpUtils
+import com.scx.backend.commonaudit.annotation.OperationLog
 import com.scx.backend.commonaudit.toClientInfo
 import com.scx.backend.identity.user.dto.*
 import io.swagger.v3.oas.annotations.Operation
@@ -31,6 +32,7 @@ class UserController(
     // ============ 公开接口（@Public）============
 
     @Public
+    @OperationLog(module = "用户管理", action = "注册用户")
     @Operation(summary = "用户注册", description = "通过邮箱、用户名、密码及邮箱验证码完成注册")
     @PostMapping("/register")
     fun register(@Valid @RequestBody dto: RegisterUserDto, request: HttpServletRequest): UserResponseDto =
@@ -94,16 +96,19 @@ class UserController(
 
     // ============ 角色管理 ============
 
+    @OperationLog(module = "用户管理", action = "分配角色")
     @Operation(summary = "分配单个角色", description = "为指定用户分配单个角色")
     @PostMapping("/assign-role")
     fun assignRole(@Valid @RequestBody dto: AssignRoleDto): UserRoleResponseDto =
         userService.assignRole(dto.userId, dto)
 
+    @OperationLog(module = "用户管理", action = "批量分配角色")
     @Operation(summary = "批量分配角色", description = "为指定用户批量分配多个角色")
     @PostMapping("/assign-roles-batch")
     fun assignRoles(@Valid @RequestBody dto: AssignRolesDto): List<UserRoleResponseDto> =
         userService.assignRoles(dto.userId, dto)
 
+    @OperationLog(module = "用户管理", action = "移除角色")
     @Operation(summary = "移除角色", description = "移除指定用户的某个角色")
     @DeleteMapping("/remove-role")
     fun removeRole(
@@ -147,11 +152,13 @@ class UserController(
     fun queryUsers(dto: QueryUsersDto): UserListResponseDto = userService.queryUsers(dto)
 
     @Admin
+    @OperationLog(module = "用户管理", action = "创建用户")
     @Operation(summary = "创建用户", description = "管理员创建用户，可同时分配角色")
     @PostMapping("/create")
     fun createUser(@Valid @RequestBody dto: CreateUserDto): UserResponseDto = userService.createUser(dto)
 
     @Admin
+    @OperationLog(module = "用户管理", action = "批量删除用户")
     @Operation(summary = "批量删除用户", description = "逻辑删除多个用户，返回受影响行数")
     @DeleteMapping("/batch-delete")
     fun deleteUsers(
@@ -163,6 +170,7 @@ class UserController(
     }
 
     @Admin
+    @OperationLog(module = "用户管理", action = "切换用户状态")
     @Operation(summary = "切换用户状态", description = "批量启用或停用用户账号，返回受影响行数")
     @PatchMapping("/toggle-status")
     fun toggleUserStatus(

@@ -107,7 +107,7 @@ class RoleService(
             SystemException.dataNotFound("Role with ID '$id' not found")
         }
         if (role.isSystem) {
-            throw SystemException.businessRuleViolation("Cannot delete system roles")
+            throw SystemException.businessRuleViolation("系统角色不可删除")
         }
         roleRepository.delete(role)
         logger.info("Role deleted: {} ({})", role.name, role.code)

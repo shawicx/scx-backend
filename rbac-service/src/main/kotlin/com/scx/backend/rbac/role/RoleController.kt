@@ -5,6 +5,7 @@ import com.scx.backend.rbac.role.dto.CreateRoleDto
 import com.scx.backend.rbac.role.dto.RoleResponseDto
 import com.scx.backend.rbac.role.dto.UpdateRoleDto
 import com.scx.backend.common.dto.MessageDto
+import com.scx.backend.commonaudit.annotation.OperationLog
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
 class RoleController(
     private val roleService: RoleService,
 ) {
+    @OperationLog(module = "角色管理", action = "创建角色")
     @Operation(summary = "创建角色", description = "新建一个角色，含名称、编码、描述及是否系统角色")
     @PostMapping("/create")
     fun create(@Valid @RequestBody dto: CreateRoleDto): RoleResponseDto = roleService.create(dto)
@@ -51,10 +53,12 @@ class RoleController(
     fun findByCode(@Parameter(description = "角色编码") @RequestParam code: String): RoleResponseDto =
         roleService.findByCode(code)
 
+    @OperationLog(module = "角色管理", action = "更新角色")
     @Operation(summary = "更新角色", description = "根据角色 ID 更新角色信息")
     @PutMapping("/update")
     fun update(@Valid @RequestBody dto: UpdateRoleDto): RoleResponseDto = roleService.update(dto.id, dto)
 
+    @OperationLog(module = "角色管理", action = "删除角色")
     @Operation(summary = "删除角色", description = "根据角色 ID 删除角色")
     @DeleteMapping("/delete")
     fun delete(@Parameter(description = "角色 ID") @RequestParam id: String): MessageDto {
@@ -62,6 +66,7 @@ class RoleController(
         return MessageDto("角色删除成功")
     }
 
+    @OperationLog(module = "角色管理", action = "分配权限")
     @Operation(summary = "为角色分配权限", description = "批量给角色分配权限")
     @PostMapping("/assign-permissions")
     fun assignPermissions(@Valid @RequestBody dto: AssignPermissionsDto): MessageDto {
@@ -74,6 +79,7 @@ class RoleController(
     fun getRolePermissions(@Parameter(description = "角色 ID") @RequestParam id: String) =
         roleService.getRolePermissions(id)
 
+    @OperationLog(module = "角色管理", action = "移除权限")
     @Operation(summary = "移除角色权限", description = "从角色中移除指定权限")
     @DeleteMapping("/remove-permission")
     fun removePermission(
