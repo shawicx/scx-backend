@@ -6,6 +6,7 @@ import com.scx.backend.common.dto.MessageDto
 import com.scx.backend.common.security.Admin
 import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.common.util.IpUtils
+import com.scx.backend.commonaudit.toClientInfo
 import com.scx.backend.identity.user.dto.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -39,7 +40,7 @@ class UserController(
     @Operation(summary = "邮箱验证码登录", description = "使用邮箱与 6 位验证码登录，返回访问与刷新令牌")
     @PostMapping("/login")
     fun login(@Valid @RequestBody dto: LoginUserDto, request: HttpServletRequest): LoginResponseDto =
-        userService.loginWithEmailCode(dto, IpUtils.getClientIp(request))
+        userService.loginWithEmailCode(dto, request.toClientInfo())
 
     @Public
     @Operation(summary = "密码登录", description = "使用邮箱与前端加密后的密码登录，需先获取加密密钥")
@@ -48,7 +49,7 @@ class UserController(
         @Valid @RequestBody dto: LoginWithPasswordDto,
         request: HttpServletRequest
     ): LoginResponseDto =
-        userService.loginWithPassword(dto, IpUtils.getClientIp(request))
+        userService.loginWithPassword(dto, request.toClientInfo())
 
     @Public
     @Operation(summary = "获取密码加密密钥", description = "返回一次性 AES 密钥及其 ID，用于前端加密登录密码，5 分钟失效")
@@ -75,15 +76,18 @@ class UserController(
 
     @Operation(summary = "登出", description = "清除当前用户的访问与刷新令牌")
     @PostMapping("/logout")
-    fun logout(@Parameter(description = "用户 ID") @RequestParam userId: String): MessageDto {
-        userService.logout(userId)
+    fun logout(
+        @Parameter(description = "用户 ID") @RequestParam userId: String,
+        request: HttpServletRequest,
+    ): MessageDto {
+        userService.logout(userId, request.toClientInfo())
         return MessageDto("登出成功")
     }
 
     @Operation(summary = "刷新令牌", description = "使用刷新令牌换取新的访问与刷新令牌")
     @PostMapping("/refresh-token")
-    fun refreshToken(@RequestBody dto: RefreshTokenDto): Any {
-        val tokens = userService.refreshTokens(dto.refreshToken)
+    fun refreshToken(@RequestBody dto: RefreshTokenDto, request: HttpServletRequest): Any {
+        val tokens = userService.refreshTokens(dto.refreshToken, request.toClientInfo())
             ?: throw com.scx.backend.common.exception.SystemException.invalidParameter("刷新令牌无效或已过期")
         return tokens
     }

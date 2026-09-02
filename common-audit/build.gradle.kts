@@ -22,5 +22,7 @@ dependencies {
     // 用 api 传递 common-web/common，使依赖本模块的服务能直接访问
     // AuthContextResolver / IpUtils / SystemException / IdGenerator 等
     api(project(":common-web"))
+    // ClientInfo 扩展函数需要 Servlet API（common-web 的 starter-web 为 implementation，不传递）
+    implementation("jakarta.servlet:jakarta.servlet-api")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 }

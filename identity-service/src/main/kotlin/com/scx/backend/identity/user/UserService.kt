@@ -6,6 +6,9 @@ import com.scx.backend.common.constants.TtlConstants
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.CryptoUtil
 import com.scx.backend.common.util.IdGenerator
+import com.scx.backend.commonaudit.ClientInfo
+import com.scx.backend.commonaudit.constants.LoginType
+import com.scx.backend.commonaudit.service.LoginLogRecorder
 import com.scx.backend.identity.entity.User
 import com.scx.backend.identity.entity.UserPreferences
 import com.scx.backend.identity.entity.UserRole
@@ -55,6 +58,7 @@ class UserService(
     private val mailService: MailService,
     private val authService: AuthService,
     private val objectMapper: ObjectMapper,
+    private val loginLogRecorder: LoginLogRecorder,
 ) {
     private val logger = LoggerFactory.getLogger(UserService::class.java)
     private val passwordEncoder = BCryptPasswordEncoder(12)
@@ -90,56 +94,93 @@ class UserService(
     }
 
     @Transactional
-    fun loginWithEmailCode(dto: LoginUserDto, clientIp: String?): LoginResponseDto {
-        val user = userRepository.findByEmail(dto.email)
-            ?: throw SystemException.invalidCredentials("邮箱不存在")
-        if (!user.isActive) throw SystemException.accountDisabled()
-        if (!validateLoginCode(dto.email, dto.emailVerificationCode)) {
-            throw SystemException.invalidVerificationCode()
+    fun loginWithEmailCode(dto: LoginUserDto, clientInfo: ClientInfo?): LoginResponseDto {
+        // 已解析出的用户 ID：登录失败时（如验证码错误）用于日志回溯
+        var resolvedUserId: String? = null
+        try {
+            val user = userRepository.findByEmail(dto.email)
+                ?: throw SystemException.invalidCredentials("邮箱不存在")
+            resolvedUserId = user.id
+            if (!user.isActive) throw SystemException.accountDisabled()
+            if (!validateLoginCode(dto.email, dto.emailVerificationCode)) {
+                throw SystemException.invalidVerificationCode()
+            }
+            updateLoginInfo(user.id, clientInfo?.ip)
+            val updated = userRepository.findById(user.id).orElseThrow()
+            val admin = isAdmin(updated.id)
+            val access = authService.generateAccessToken(updated.id, updated.email, admin)
+            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
+            loginLogRecorder.record(LoginType.EMAIL_CODE, dto.email, user.id, clientInfo, success = true)
+            return LoginResponseDto.from(updated, access, refresh)
+        } catch (e: SystemException) {
+            loginLogRecorder.record(
+                LoginType.EMAIL_CODE, dto.email, resolvedUserId, clientInfo,
+                success = false, failReason = "${e.code} ${e.message}",
+            )
+            throw e
         }
-        updateLoginInfo(user.id, clientIp)
-        val updated = userRepository.findById(user.id).orElseThrow()
-        val admin = isAdmin(updated.id)
-        val access = authService.generateAccessToken(updated.id, updated.email, admin)
-        val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
-        return LoginResponseDto.from(updated, access, refresh)
     }
 
     @Transactional
-    fun loginWithPassword(dto: LoginWithPasswordDto, clientIp: String?): LoginResponseDto {
-        if (dto.keyId.isBlank()) {
-            throw SystemException.invalidParameter("密码必须加密传输，请先获取加密密钥")
+    fun loginWithPassword(dto: LoginWithPasswordDto, clientInfo: ClientInfo?): LoginResponseDto {
+        var resolvedUserId: String? = null
+        try {
+            if (dto.keyId.isBlank()) {
+                throw SystemException.invalidParameter("密码必须加密传输，请先获取加密密钥")
+            }
+            val encryptionKey = authService.getEncryptionKey(dto.keyId)
+                ?: throw SystemException.keyExpired()
+            val decryptedPassword = try {
+                CryptoUtil.decrypt(dto.password, encryptionKey)
+            } catch (e: Exception) {
+                throw SystemException.decryptionFailed()
+            }
+            val user = userRepository.findByEmail(dto.email)
+                ?: throw SystemException.invalidCredentials("邮箱或密码错误")
+            resolvedUserId = user.id
+            if (!user.isActive) throw SystemException.accountDisabled()
+            if (!passwordEncoder.matches(decryptedPassword, user.password)) {
+                throw SystemException.invalidCredentials("邮箱或密码错误")
+            }
+            updateLoginInfo(user.id, clientInfo?.ip)
+            val updated = userRepository.findById(user.id).orElseThrow()
+            val admin = isAdmin(updated.id)
+            val access = authService.generateAccessToken(updated.id, updated.email, admin)
+            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
+            loginLogRecorder.record(LoginType.PASSWORD, dto.email, user.id, clientInfo, success = true)
+            return LoginResponseDto.from(updated, access, refresh)
+        } catch (e: SystemException) {
+            loginLogRecorder.record(
+                LoginType.PASSWORD, dto.email, resolvedUserId, clientInfo,
+                success = false, failReason = "${e.code} ${e.message}",
+            )
+            throw e
         }
-        val encryptionKey = authService.getEncryptionKey(dto.keyId)
-            ?: throw SystemException.keyExpired()
-        val decryptedPassword = try {
-            CryptoUtil.decrypt(dto.password, encryptionKey)
-        } catch (e: Exception) {
-            throw SystemException.decryptionFailed()
-        }
-        val user = userRepository.findByEmail(dto.email)
-            ?: throw SystemException.invalidCredentials("邮箱或密码错误")
-        if (!user.isActive) throw SystemException.accountDisabled()
-        if (!passwordEncoder.matches(decryptedPassword, user.password)) {
-            throw SystemException.invalidCredentials("邮箱或密码错误")
-        }
-        updateLoginInfo(user.id, clientIp)
-        val updated = userRepository.findById(user.id).orElseThrow()
-        val admin = isAdmin(updated.id)
-        val access = authService.generateAccessToken(updated.id, updated.email, admin)
-        val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
-        return LoginResponseDto.from(updated, access, refresh)
     }
 
-    fun logout(userId: String) {
+    fun logout(userId: String, clientInfo: ClientInfo?) {
         authService.logout(userId)
+        // 冗余取一次邮箱便于日志检索（用户不存在时仅记 userId）
+        val email = userRepository.findById(userId).orElse(null)?.email
+        loginLogRecorder.record(LoginType.LOGOUT, email, userId, clientInfo, success = true)
     }
 
     /**
      * 刷新令牌：传入 isAdmin 计算回调，刷新时重算管理员标志（角色变更后刷新即生效）
      */
-    fun refreshTokens(refreshToken: String): TokenPair? =
-        authService.refreshTokens(refreshToken) { userId -> isAdmin(userId) }
+    fun refreshTokens(refreshToken: String, clientInfo: ClientInfo?): TokenPair? {
+        val userInfo = authService.validateRefreshToken(refreshToken)
+        val tokens = authService.refreshTokens(refreshToken) { userId -> isAdmin(userId) }
+        if (tokens != null && userInfo != null) {
+            loginLogRecorder.record(LoginType.REFRESH, userInfo.email, userInfo.userId, clientInfo, success = true)
+        } else {
+            loginLogRecorder.record(
+                LoginType.REFRESH, userInfo?.email, userInfo?.userId, clientInfo,
+                success = false, failReason = "刷新令牌无效或已过期",
+            )
+        }
+        return tokens
+    }
 
     fun getEncryptionKey(): EncryptionKey = authService.generateEncryptionKey()
 
