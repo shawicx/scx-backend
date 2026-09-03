@@ -150,9 +150,16 @@ class UserService(
             loginLogRecorder.record(LoginType.PASSWORD, dto.email, user.id, clientInfo, success = true)
             return LoginResponseDto.from(updated, access, refresh)
         } catch (e: SystemException) {
+            // API 响应统一为"邮箱或密码错误"（防账号枚举），但登录日志须记录真实原因：
+            // 9006 且未解析出用户 = 账号不存在；已解析出用户 = 密码错误
+            val failReason = when {
+                e.code == 9006 && resolvedUserId == null -> "9006 账号不存在"
+                e.code == 9006 -> "9006 密码错误"
+                else -> "${e.code} ${e.message}"
+            }
             loginLogRecorder.record(
                 LoginType.PASSWORD, dto.email, resolvedUserId, clientInfo,
-                success = false, failReason = "${e.code} ${e.message}",
+                success = false, failReason = failReason,
             )
             throw e
         }

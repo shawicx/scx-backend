@@ -1,5 +1,6 @@
 package com.scx.backend.rbac.role.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.scx.backend.rbac.entity.Role
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
@@ -22,9 +23,6 @@ data class CreateRoleDto(
     @Schema(description = "角色描述（最长 255 字符）")
     @field:Size(max = 255, message = "角色描述不能超过255个字符")
     val description: String? = null,
-
-    @Schema(description = "是否系统内置角色（系统角色不可删除）")
-    val isSystem: Boolean? = false,
 )
 
 /** 更新角色请求（ID 在 body 中） */
@@ -45,9 +43,6 @@ data class UpdateRoleDto(
     @Schema(description = "角色描述（最长 255 字符）")
     @field:Size(max = 255, message = "角色描述不能超过255个字符")
     val description: String? = null,
-
-    @Schema(description = "是否系统内置角色")
-    val isSystem: Boolean? = null,
 )
 
 /** 为角色分配权限请求（ID 在 body 中） */
@@ -77,6 +72,7 @@ data class RoleResponseDto(
     val description: String?,
 
     @Schema(description = "是否系统内置角色")
+    @get:JsonProperty("isSystem")
     val isSystem: Boolean,
 
     @Schema(description = "创建时间")

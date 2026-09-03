@@ -1,5 +1,6 @@
 package com.scx.backend.identity.user.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.scx.backend.identity.entity.User
 import com.scx.backend.identity.entity.UserPreferences
 import io.swagger.v3.oas.annotations.media.Schema
@@ -36,6 +37,7 @@ data class UserResponseDto(
     val loginCount: Int,
 
     @Schema(description = "是否启用")
+    @get:JsonProperty("isActive")
     val isActive: Boolean,
 
     @Schema(description = "创建时间")
@@ -136,6 +138,7 @@ data class UserListItemDto(
     val emailVerified: Boolean,
 
     @Schema(description = "是否启用")
+    @get:JsonProperty("isActive")
     val isActive: Boolean,
 
     @Schema(description = "最后登录时间")

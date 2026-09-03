@@ -39,7 +39,8 @@ class RoleService(
             name = dto.name,
             code = dto.code,
             description = dto.description,
-            isSystem = dto.isSystem ?: false,
+            // 系统角色标记只能由后端（SeedService）产生，不接受客户端设置
+            isSystem = false,
         )
         val saved = roleRepository.save(role)
         logger.info("Role created: {} ({})", saved.name, saved.code)
@@ -75,7 +76,7 @@ class RoleService(
         }
         // 系统内置角色不可修改
         if (role.isSystem) {
-            throw SystemException.businessRuleViolation("Cannot modify system roles")
+            throw SystemException.businessRuleViolation("系统角色不可修改")
         }
         // 冲突检查
         dto.name?.let { newName ->
@@ -95,7 +96,6 @@ class RoleService(
         dto.name?.let { role.name = it }
         dto.code?.let { role.code = it }
         dto.description?.let { role.description = it }
-        dto.isSystem?.let { role.isSystem = it }
         val updated = roleRepository.save(role)
         logger.info("Role updated: {} ({})", updated.name, updated.code)
         return RoleResponseDto.from(updated)
