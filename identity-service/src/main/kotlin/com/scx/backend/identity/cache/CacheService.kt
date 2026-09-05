@@ -1,6 +1,7 @@
 package com.scx.backend.identity.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.scx.backend.identity.cache.dto.RedisConnectionInfoDto
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
@@ -155,19 +156,19 @@ class CacheService(
     /**
      * 获取 Redis 连接信息
      */
-    fun getConnectionInfo(): Map<String, Any> {
+    fun getConnectionInfo(): RedisConnectionInfoDto {
         return try {
             val connection = redisTemplate.connectionFactory?.connection
             // Spring Data Redis 4.x 移除了 isOpen；用 ping 探活判断连接状态
             val isOpen = connection?.use { it.ping() } != null
-            mapOf(
-                "isOpen" to isOpen,
-                "isReady" to isOpen,
-                "status" to if (isOpen) "ready" else "closed",
+            RedisConnectionInfoDto(
+                isOpen = isOpen,
+                isReady = isOpen,
+                status = if (isOpen) "ready" else "closed",
             )
         } catch (e: Exception) {
             logger.warn("无法获取Redis连接信息", e)
-            mapOf("isOpen" to false, "isReady" to false, "status" to "unknown")
+            RedisConnectionInfoDto(isOpen = false, isReady = false, status = "unknown")
         }
     }
 

@@ -131,7 +131,7 @@ class FileServiceTest {
 
         val result = fileService.deleteFiles("user-1", false, DeleteFilesDto(listOf("a", "b", "c")))
 
-        assertEquals(1, result["count"], "仅本人未软删的 1 个文件应被删除")
+        assertEquals(1, result.count, "仅本人未软删的 1 个文件应被删除")
         assertNotNull(own.deletedAt, "本人未删文件应被置删除时间")
         verify(repository).saveAll(any<MutableIterable<File>>())
     }
@@ -143,7 +143,7 @@ class FileServiceTest {
 
         val result = fileService.deleteFiles("admin-user", true, DeleteFilesDto(listOf("b")))
 
-        assertEquals(1, result["count"])
+        assertEquals(1, result.count)
         assertNotNull(others.deletedAt)
     }
 

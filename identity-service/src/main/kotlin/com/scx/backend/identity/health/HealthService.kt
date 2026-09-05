@@ -1,6 +1,9 @@
 package com.scx.backend.identity.health
 
 import com.scx.backend.identity.cache.CacheService
+import com.scx.backend.identity.health.dto.ComponentHealthDto
+import com.scx.backend.identity.health.dto.HealthResponseDto
+import com.scx.backend.identity.health.dto.SystemInfoDto
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -19,70 +22,70 @@ class HealthService(
 ) {
     private val logger = LoggerFactory.getLogger(HealthService::class.java)
 
-    fun checkHealth(): Map<String, Any> {
+    fun checkHealth(): HealthResponseDto {
         val startTime = System.currentTimeMillis()
         return try {
             val dbStatus = checkDatabase()
             val redisStatus = checkRedis()
-            val status = if (dbStatus["status"] == "ok" && redisStatus["status"] == "ok") "ok" else "degraded"
-            mapOf(
-                "service" to "scx-backend",
-                "status" to status,
-                "timestamp" to java.time.Instant.now().toString(),
-                "database" to dbStatus,
-                "redis" to redisStatus,
-                "system" to getSystemInfo(),
-                "responseTime" to "${System.currentTimeMillis() - startTime}ms",
+            val status = if (dbStatus.status == "ok" && redisStatus.status == "ok") "ok" else "degraded"
+            HealthResponseDto(
+                service = "scx-backend",
+                status = status,
+                timestamp = java.time.Instant.now().toString(),
+                database = dbStatus,
+                redis = redisStatus,
+                system = getSystemInfo(),
+                responseTime = "${System.currentTimeMillis() - startTime}ms",
             )
         } catch (e: Exception) {
             logger.error("Health check failed", e)
-            mapOf(
-                "service" to "scx-backend",
-                "status" to "error",
-                "timestamp" to java.time.Instant.now().toString(),
-                "database" to mapOf("status" to "error", "message" to (e.message ?: "unknown")),
-                "redis" to mapOf("status" to "error", "message" to (e.message ?: "unknown")),
-                "system" to getSystemInfo(),
-                "responseTime" to "${System.currentTimeMillis() - startTime}ms",
+            HealthResponseDto(
+                service = "scx-backend",
+                status = "error",
+                timestamp = java.time.Instant.now().toString(),
+                database = ComponentHealthDto("error", e.message ?: "unknown"),
+                redis = ComponentHealthDto("error", e.message ?: "unknown"),
+                system = getSystemInfo(),
+                responseTime = "${System.currentTimeMillis() - startTime}ms",
             )
         }
     }
 
-    private fun checkDatabase(): Map<String, Any> = try {
+    private fun checkDatabase(): ComponentHealthDto = try {
         entityManager.createNativeQuery("SELECT 1").singleResult
-        mapOf("status" to "ok")
+        ComponentHealthDto("ok")
     } catch (e: Exception) {
         logger.error("Database health check failed", e)
-        mapOf("status" to "error", "message" to (e.message ?: "unknown"))
+        ComponentHealthDto("error", e.message ?: "unknown")
     }
 
-    private fun checkRedis(): Map<String, Any> = try {
+    private fun checkRedis(): ComponentHealthDto = try {
         val testKey = "health-check-test"
         cacheService.setWithMilliseconds(testKey, "test", 5000)
         val value = cacheService.get<String>(testKey)
         cacheService.del(testKey)
         if (value == "test") {
-            mapOf("status" to "ok")
+            ComponentHealthDto("ok")
         } else {
-            mapOf("status" to "error", "message" to "Redis read/write failed")
+            ComponentHealthDto("error", "Redis read/write failed")
         }
     } catch (e: Exception) {
         logger.error("Redis health check failed", e)
-        mapOf("status" to "error", "message" to (e.message ?: "unknown"))
+        ComponentHealthDto("error", e.message ?: "unknown")
     }
 
-    private fun getSystemInfo(): Map<String, Any> {
+    private fun getSystemInfo(): SystemInfoDto {
         val runtime = Runtime.getRuntime()
         val runtimeMXBean = ManagementFactory.getRuntimeMXBean()
-        return mapOf(
-            "javaVersion" to System.getProperty("java.version"),
-            "platform" to "${System.getProperty("os.name")} ${System.getProperty("os.arch")}",
-            "uptime" to runtimeMXBean.uptime,
-            "availableProcessors" to runtime.availableProcessors(),
-            "maxMemory" to runtime.maxMemory(),
-            "totalMemory" to runtime.totalMemory(),
-            "freeMemory" to runtime.freeMemory(),
-            "usedMemory" to (runtime.totalMemory() - runtime.freeMemory()),
+        return SystemInfoDto(
+            javaVersion = System.getProperty("java.version"),
+            platform = "${System.getProperty("os.name")} ${System.getProperty("os.arch")}",
+            uptime = runtimeMXBean.uptime,
+            availableProcessors = runtime.availableProcessors(),
+            maxMemory = runtime.maxMemory(),
+            totalMemory = runtime.totalMemory(),
+            freeMemory = runtime.freeMemory(),
+            usedMemory = (runtime.totalMemory() - runtime.freeMemory()),
         )
     }
 }

@@ -100,7 +100,7 @@ import com.scx.backend.common.exception.SystemException
 throw SystemException.emailExists()                          // 预设消息
 throw SystemException.dataNotFound("用户不存在")               // 自定义消息
 
-// Controller 返回 DTO / Map（由 GlobalResponseHandler 自动包装）
+// Controller 返回显式 DTO（由 GlobalResponseHandler 自动包装）
 fun detail(): UserResponseDto = userService.findById(id)
 fun delete(): MessageDto = MessageDto("删除成功")
 ```

@@ -3,6 +3,8 @@ package com.scx.backend.identity.user.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.scx.backend.identity.entity.User
 import com.scx.backend.identity.entity.UserPreferences
+import com.scx.backend.rbac.entity.Permission
+import com.scx.backend.rbac.entity.Role
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
@@ -179,3 +181,91 @@ data class UserListResponseDto(
     @Schema(description = "每页条数")
     val limit: Int,
 )
+
+/**
+ * @description 用户角色摘要响应（用户所属角色列表项，精简字段）
+ *
+ * @property id 角色 ID
+ * @property name 角色名称
+ * @property code 角色编码
+ * @property description 角色描述
+ *
+ * @example UserRoleSummaryDto(id = "01AROLE...", name = "管理员", code = "ADMIN", description = null)
+ */
+@Schema(description = "用户角色摘要响应")
+data class UserRoleSummaryDto(
+    @Schema(description = "角色 ID")
+    val id: String,
+
+    @Schema(description = "角色名称")
+    val name: String,
+
+    @Schema(description = "角色编码")
+    val code: String,
+
+    @Schema(description = "角色描述")
+    val description: String?,
+) {
+    companion object {
+        /**
+         * @description 从角色实体构造摘要 DTO
+         * @param role 角色实体（rbac）
+         * @returns UserRoleSummaryDto 用户角色摘要响应
+         */
+        fun from(role: Role): UserRoleSummaryDto = UserRoleSummaryDto(
+            id = role.id,
+            name = role.name,
+            code = role.code,
+            description = role.description,
+        )
+    }
+}
+
+/**
+ * @description 用户权限摘要响应（用户经角色聚合的权限列表项，精简字段）
+ *
+ * @property id 权限 ID
+ * @property name 权限名称
+ * @property action 操作动作
+ * @property resource 资源名称
+ * @property type 权限类型（MENU / BUTTON）
+ * @property path 路由路径
+ *
+ * @example UserPermissionSummaryDto(id = "01APERM...", name = "用户列表", action = null, resource = null, type = "MENU", path = "/users")
+ */
+@Schema(description = "用户权限摘要响应")
+data class UserPermissionSummaryDto(
+    @Schema(description = "权限 ID")
+    val id: String,
+
+    @Schema(description = "权限名称")
+    val name: String,
+
+    @Schema(description = "操作动作")
+    val action: String?,
+
+    @Schema(description = "资源名称")
+    val resource: String?,
+
+    @Schema(description = "权限类型（MENU / BUTTON）")
+    val type: String,
+
+    @Schema(description = "路由路径")
+    val path: String?,
+) {
+    companion object {
+        /**
+         * @description 从权限实体构造摘要 DTO
+         * @param permission 权限实体（rbac）
+         * @returns UserPermissionSummaryDto 用户权限摘要响应
+         */
+        fun from(permission: Permission): UserPermissionSummaryDto = UserPermissionSummaryDto(
+            id = permission.id,
+            name = permission.name,
+            action = permission.action,
+            resource = permission.resource,
+            type = permission.type,
+            path = permission.path,
+        )
+    }
+}

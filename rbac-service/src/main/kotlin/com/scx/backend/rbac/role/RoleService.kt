@@ -6,8 +6,10 @@ import com.scx.backend.rbac.entity.Permission
 import com.scx.backend.rbac.entity.Role
 import com.scx.backend.rbac.role.dto.AssignPermissionsDto
 import com.scx.backend.rbac.role.dto.CreateRoleDto
+import com.scx.backend.rbac.role.dto.RoleListResponseDto
 import com.scx.backend.rbac.role.dto.RoleResponseDto
 import com.scx.backend.rbac.role.dto.UpdateRoleDto
+import com.scx.backend.rbac.permission.dto.PermissionSummaryDto
 import com.scx.backend.rbac.rolepermission.RolePermissionService
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
@@ -47,12 +49,14 @@ class RoleService(
         return RoleResponseDto.from(saved)
     }
 
-    fun findAll(page: Int = 1, limit: Int = 10): Map<String, Any> {
+    fun findAll(page: Int = 1, limit: Int = 10): RoleListResponseDto {
         val pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
         val result = roleRepository.findAll(pageable)
-        return mapOf(
-            "list" to result.content.map { RoleResponseDto.from(it) },
-            "total" to result.totalElements,
+        return RoleListResponseDto(
+            list = result.content.map { RoleResponseDto.from(it) },
+            total = result.totalElements,
+            page = page,
+            limit = limit,
         )
     }
 
@@ -137,13 +141,13 @@ class RoleService(
     /**
      * 获取角色的权限列表
      */
-    fun getRolePermissions(roleId: String): List<Map<String, Any?>> {
+    fun getRolePermissions(roleId: String): List<PermissionSummaryDto> {
         if (!roleRepository.existsById(roleId)) {
             throw SystemException.dataNotFound("Role with ID '$roleId' not found")
         }
         val permissionIds = rolePermissionService.getPermissionsByRole(roleId)
         if (permissionIds.isEmpty()) return emptyList()
-        return permissionRepository.findAllById(permissionIds).map { it.toMap() }
+        return permissionRepository.findAllById(permissionIds).map { PermissionSummaryDto.from(it) }
     }
 
     /**
@@ -154,10 +158,4 @@ class RoleService(
         rolePermissionService.delete(roleId, permissionId)
         logger.info("Permission removed from role: {} - {}", roleId, permissionId)
     }
-
-    private fun Permission.toMap(): Map<String, Any?> = mapOf(
-        "id" to id, "name" to name, "type" to type, "action" to action,
-        "resource" to resource, "description" to description, "level" to level,
-        "path" to path, "icon" to icon,
-    )
 }

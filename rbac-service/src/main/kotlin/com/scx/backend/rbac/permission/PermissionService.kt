@@ -4,6 +4,7 @@ import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.rbac.entity.Permission
 import com.scx.backend.rbac.permission.dto.CreatePermissionDto
+import com.scx.backend.rbac.permission.dto.PermissionListResponseDto
 import com.scx.backend.rbac.permission.dto.PermissionMenuTreeDto
 import com.scx.backend.rbac.permission.dto.PermissionQueryDto
 import com.scx.backend.rbac.permission.dto.PermissionResponseDto
@@ -88,7 +89,7 @@ class PermissionService(
         }
     }
 
-    fun findAll(dto: PermissionQueryDto): Map<String, Any> {
+    fun findAll(dto: PermissionQueryDto): PermissionListResponseDto {
         val sort = Sort.by(Sort.Direction.ASC, "sort").and(Sort.by(Sort.Direction.DESC, "createdAt"))
         val pageable = PageRequest.of(dto.page - 1, dto.limit, sort)
         val spec = Specification<Permission> { root, _, cb ->
@@ -111,7 +112,12 @@ class PermissionService(
             cb.and(*predicates.toTypedArray())
         }
         val page = permissionRepository.findAll(spec, pageable)
-        return mapOf("list" to page.content.map { PermissionResponseDto.from(it) }, "total" to page.totalElements)
+        return PermissionListResponseDto(
+            list = page.content.map { PermissionResponseDto.from(it) },
+            total = page.totalElements,
+            page = dto.page,
+            limit = dto.limit,
+        )
     }
 
     fun findById(id: String): PermissionResponseDto {

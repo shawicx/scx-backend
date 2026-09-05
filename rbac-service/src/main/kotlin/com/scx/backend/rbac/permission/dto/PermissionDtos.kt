@@ -271,3 +271,58 @@ data class PermissionMenuTreeDto(
     @Schema(description = "子菜单列表")
     val children: List<PermissionMenuTreeDto>?,
 )
+
+/** 权限摘要响应（角色权限列表用，精简字段） */
+@Schema(description = "权限摘要响应")
+data class PermissionSummaryDto(
+    @Schema(description = "权限 ID")
+    val id: String,
+
+    @Schema(description = "权限名称")
+    val name: String,
+
+    @Schema(description = "权限类型（MENU / BUTTON）")
+    val type: String,
+
+    @Schema(description = "操作动作")
+    val action: String?,
+
+    @Schema(description = "资源名称")
+    val resource: String?,
+
+    @Schema(description = "权限描述")
+    val description: String?,
+
+    @Schema(description = "层级")
+    val level: Int,
+
+    @Schema(description = "路由路径")
+    val path: String?,
+
+    @Schema(description = "图标")
+    val icon: String?,
+) {
+    companion object {
+        fun from(p: Permission): PermissionSummaryDto = PermissionSummaryDto(
+            id = p.id, name = p.name, type = p.type, action = p.action,
+            resource = p.resource, description = p.description, level = p.level,
+            path = p.path, icon = p.icon,
+        )
+    }
+}
+
+/** 权限列表响应 */
+@Schema(description = "权限列表响应")
+data class PermissionListResponseDto(
+    @Schema(description = "权限列表")
+    val list: List<PermissionResponseDto>,
+
+    @Schema(description = "总数")
+    val total: Long,
+
+    @Schema(description = "当前页码")
+    val page: Int,
+
+    @Schema(description = "每页条数")
+    val limit: Int,
+)

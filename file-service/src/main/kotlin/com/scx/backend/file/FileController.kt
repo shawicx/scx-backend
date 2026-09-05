@@ -78,9 +78,7 @@ class FileController(
         @AuthenticationPrincipal principal: AuthPrincipal?,
     ): CountResultDto {
         val user = requirePrincipal(principal)
-        val result = fileService.deleteFiles(user.userId, user.isAdmin, dto)
-        @Suppress("UNCHECKED_CAST")
-        return CountResultDto(result["count"] as Int, result["message"] as String)
+        return fileService.deleteFiles(user.userId, user.isAdmin, dto)
     }
 
     /**

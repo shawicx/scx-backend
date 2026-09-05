@@ -6,6 +6,8 @@ import com.scx.backend.rbac.entity.RolePermission
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RolePermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
+import com.scx.backend.rbac.rolepermission.dto.RolePermissionListResponseDto
+import com.scx.backend.rbac.rolepermission.dto.RolePermissionResponseDto
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -113,10 +115,15 @@ class RolePermissionService(
         return created
     }
 
-    fun findAll(page: Int = 1, limit: Int = 10): Map<String, Any> {
+    fun findAll(page: Int = 1, limit: Int = 10): RolePermissionListResponseDto {
         val pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
         val result = rolePermissionRepository.findAll(pageable)
-        return mapOf("list" to result.content, "total" to result.totalElements)
+        return RolePermissionListResponseDto(
+            list = result.content.map { RolePermissionResponseDto.from(it) },
+            total = result.totalElements,
+            page = page,
+            limit = limit,
+        )
     }
 
     fun findByRoleId(roleId: String): List<RolePermission> {

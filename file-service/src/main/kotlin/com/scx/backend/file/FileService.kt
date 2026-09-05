@@ -1,5 +1,6 @@
 package com.scx.backend.file
 
+import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.file.dto.DeleteFilesDto
@@ -173,10 +174,10 @@ class FileService(
      * @param userId 当前用户 ID
      * @param isAdmin 是否管理员（true 时可删除任意用户文件）
      * @param dto 删除请求（文件 ID 列表）
-     * @returns Map<String, Any> count=受影响行数，message=提示信息
+     * @returns CountResultDto count=受影响行数，message=提示信息
      */
     @Transactional
-    fun deleteFiles(userId: String, isAdmin: Boolean, dto: DeleteFilesDto): Map<String, Any> {
+    fun deleteFiles(userId: String, isAdmin: Boolean, dto: DeleteFilesDto): CountResultDto {
         val targets = fileRepository.findAllById(dto.ids.distinct()).filter {
             it.deletedAt == null && (isAdmin || it.userId == userId)
         }
@@ -186,9 +187,9 @@ class FileService(
             fileRepository.saveAll(targets)
         }
         logger.info("批量删除文件: 请求 {} 个，实际删除 {} 个（userId={}）", dto.ids.size, targets.size, userId)
-        return mapOf(
-            "count" to targets.size,
-            "message" to "成功删除 ${targets.size} 个文件",
+        return CountResultDto(
+            count = targets.size,
+            message = "成功删除 ${targets.size} 个文件",
         )
     }
 

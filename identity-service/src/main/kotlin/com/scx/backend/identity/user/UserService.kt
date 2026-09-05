@@ -33,6 +33,8 @@ import com.scx.backend.identity.user.dto.UserListResponseDto
 import com.scx.backend.identity.user.dto.UserListItemDto
 import com.scx.backend.identity.user.dto.UserResponseDto
 import com.scx.backend.identity.user.dto.UserRoleResponseDto
+import com.scx.backend.identity.user.dto.UserRoleSummaryDto
+import com.scx.backend.identity.user.dto.UserPermissionSummaryDto
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.identity.repository.UserRepository
@@ -377,11 +379,11 @@ class UserService(
         userRoleRepository.delete(ur)
     }
 
-    fun getUserRoles(userId: String): List<Map<String, Any?>> {
+    fun getUserRoles(userId: String): List<UserRoleSummaryDto> {
         if (!userRepository.existsById(userId)) throw SystemException.dataNotFound("用户不存在")
         return userRoleRepository.findByUserId(userId).mapNotNull { ur ->
             roleRepository.findById(ur.roleId).orElse(null)?.let { role ->
-                mapOf("id" to role.id, "name" to role.name, "code" to role.code, "description" to role.description)
+                UserRoleSummaryDto.from(role)
             }
         }
     }
@@ -389,17 +391,12 @@ class UserService(
     fun hasRole(userId: String, roleCode: String): Boolean =
         userRoleRepository.existsByUserIdAndRoleCode(userId, roleCode)
 
-    fun getUserPermissions(userId: String): List<Map<String, Any?>> {
+    fun getUserPermissions(userId: String): List<UserPermissionSummaryDto> {
         val userRoles = userRoleRepository.findByUserId(userId)
         val roleIds = userRoles.map { it.roleId }
         if (roleIds.isEmpty()) return emptyList()
         val permissions = permissionRepository.findPermissionsByRoleIds(roleIds)
-        return permissions.distinctBy { it.id }.map { p ->
-            mapOf(
-                "id" to p.id, "name" to p.name, "action" to p.action,
-                "resource" to p.resource, "type" to p.type, "path" to p.path,
-            )
-        }
+        return permissions.distinctBy { it.id }.map { UserPermissionSummaryDto.from(it) }
     }
 
     fun hasPermission(userId: String, action: String, resource: String): Boolean {

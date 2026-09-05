@@ -56,6 +56,22 @@ data class AssignPermissionsDto(
     val permissionIds: List<String>,
 )
 
+/** 角色列表响应 */
+@Schema(description = "角色列表响应")
+data class RoleListResponseDto(
+    @Schema(description = "角色列表")
+    val list: List<RoleResponseDto>,
+
+    @Schema(description = "总数")
+    val total: Long,
+
+    @Schema(description = "当前页码")
+    val page: Int,
+
+    @Schema(description = "每页条数")
+    val limit: Int,
+)
+
 /** 角色信息响应 */
 @Schema(description = "角色信息响应")
 data class RoleResponseDto(

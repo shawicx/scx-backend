@@ -9,6 +9,7 @@ import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IpUtils
 import com.scx.backend.commonaudit.annotation.OperationLog
 import com.scx.backend.commonaudit.toClientInfo
+import com.scx.backend.identity.auth.TokenPair
 import com.scx.backend.identity.user.dto.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -89,7 +90,7 @@ class UserController(
 
     @Operation(summary = "刷新令牌", description = "使用刷新令牌换取新的访问与刷新令牌")
     @PostMapping("/refresh-token")
-    fun refreshToken(@RequestBody dto: RefreshTokenDto, request: HttpServletRequest): Any {
+    fun refreshToken(@RequestBody dto: RefreshTokenDto, request: HttpServletRequest): TokenPair {
         val tokens = userService.refreshTokens(dto.refreshToken, request.toClientInfo())
             ?: throw com.scx.backend.common.exception.SystemException.invalidParameter("刷新令牌无效或已过期")
         return tokens
