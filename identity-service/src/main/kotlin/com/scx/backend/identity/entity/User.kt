@@ -27,6 +27,10 @@ class User(
     @Column(name = "name", length = 50, nullable = false)
     var name: String,
 
+    /** 头像：文件服务 files.id 引用（展示直链由前端经 /files/info 换取预签名 URL） */
+    @Column(name = "\"avatar\"")
+    var avatar: String? = null,
+
     @Column(name = "password", length = 255, nullable = false)
     var password: String,
 

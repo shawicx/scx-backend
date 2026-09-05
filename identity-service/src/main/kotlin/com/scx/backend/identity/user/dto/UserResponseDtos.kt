@@ -21,6 +21,9 @@ data class UserResponseDto(
     @Schema(description = "用户名称")
     val name: String,
 
+    @Schema(description = "头像文件 ID（展示直链经 /files/info 换取预签名 URL）")
+    val avatar: String? = null,
+
     @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,
 
@@ -51,6 +54,7 @@ data class UserResponseDto(
             id = user.id,
             email = user.email,
             name = user.name,
+            avatar = user.avatar,
             emailVerified = user.emailVerified,
             preferences = user.preferences,
             lastLoginIp = user.lastLoginIp,
@@ -77,6 +81,9 @@ data class LoginResponseDto(
     @Schema(description = "用户名称")
     val name: String,
 
+    @Schema(description = "头像文件 ID（展示直链经 /files/info 换取预签名 URL）")
+    val avatar: String? = null,
+
     @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,
 
@@ -94,6 +101,7 @@ data class LoginResponseDto(
             id = user.id,
             email = user.email,
             name = user.name,
+            avatar = user.avatar,
             emailVerified = user.emailVerified,
             preferences = user.preferences,
             accessToken = accessToken,
@@ -133,6 +141,9 @@ data class UserListItemDto(
 
     @Schema(description = "用户名称")
     val name: String,
+
+    @Schema(description = "头像文件 ID（展示直链经 /files/info 换取预签名 URL）")
+    val avatar: String? = null,
 
     @Schema(description = "邮箱是否已验证")
     val emailVerified: Boolean,

@@ -1,5 +1,6 @@
 package com.scx.backend.identity.user.dto
 
+import com.scx.backend.identity.entity.UserPreferences
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
@@ -125,6 +126,41 @@ data class ToggleUserStatusDto(
 
     @Schema(description = "目标状态：true 启用，false 停用", required = true)
     val isActive: Boolean,
+)
+
+/** 更新个人资料请求（当前登录用户自查自改，不含邮箱/密码/状态） */
+@Schema(description = "更新个人资料请求")
+data class UpdateProfileDto(
+    @Schema(description = "用户名称（2-50 字符）", required = true)
+    @field:NotBlank(message = "用户名称不能为空")
+    @field:Size(min = 2, max = 50, message = "用户名称长度必须在2-50个字符之间")
+    val name: String,
+
+    @Schema(description = "头像文件 ID（来自文件服务上传接口；空字符串表示清除头像，不传表示不修改）")
+    @field:Size(max = 30, message = "头像文件ID长度不能超过30个字符")
+    val avatar: String? = null,
+)
+
+/** 更新偏好设置请求（部分更新：仅覆盖传入的非空字段，嵌套对象整体覆盖） */
+@Schema(description = "更新偏好设置请求")
+data class UpdatePreferencesDto(
+    @Schema(description = "主题，如 light / dark")
+    @field:Size(max = 50, message = "主题长度不能超过50个字符")
+    val theme: String? = null,
+
+    @Schema(description = "语言，如 zh-CN / en-US")
+    @field:Size(max = 20, message = "语言长度不能超过20个字符")
+    val language: String? = null,
+
+    @Schema(description = "时区，如 Asia/Shanghai")
+    @field:Size(max = 64, message = "时区长度不能超过64个字符")
+    val timezone: String? = null,
+
+    @Schema(description = "通知偏好（传入则整体覆盖）")
+    val notifications: UserPreferences.NotificationPrefs? = null,
+
+    @Schema(description = "隐私偏好（传入则整体覆盖）")
+    val privacy: UserPreferences.PrivacyPrefs? = null,
 )
 
 /** 分配单个角色请求 */

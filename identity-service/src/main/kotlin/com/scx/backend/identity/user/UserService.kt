@@ -27,6 +27,8 @@ import com.scx.backend.identity.user.dto.LoginWithPasswordDto
 import com.scx.backend.identity.user.dto.QueryUsersDto
 import com.scx.backend.identity.user.dto.RegisterUserDto
 import com.scx.backend.identity.user.dto.ToggleUserStatusDto
+import com.scx.backend.identity.user.dto.UpdatePreferencesDto
+import com.scx.backend.identity.user.dto.UpdateProfileDto
 import com.scx.backend.identity.user.dto.UserListResponseDto
 import com.scx.backend.identity.user.dto.UserListItemDto
 import com.scx.backend.identity.user.dto.UserResponseDto
@@ -226,6 +228,62 @@ class UserService(
 
     fun findByEmail(email: String): User? = userRepository.findByEmail(email)
 
+    // ============ 个人资料 ============
+
+    /**
+     * @description 查询当前登录用户自己的资料（软删除用户视为不存在）
+     * @param userId 用户 ID（网关注入的身份）
+     * @returns UserResponseDto 用户资料
+     *
+     * @example userService.getProfile(principal.userId)
+     */
+    fun getProfile(userId: String): UserResponseDto =
+        UserResponseDto.from(findActiveUser(userId))
+
+    /**
+     * @description 更新当前登录用户自己的资料（名称/头像；头像传空串清除、不传不改）
+     * @param userId 用户 ID
+     * @param dto 更新内容
+     * @returns UserResponseDto 更新后的资料
+     *
+     * @example userService.updateProfile(principal.userId, UpdateProfileDto(name = "新名字"))
+     */
+    @Transactional
+    fun updateProfile(userId: String, dto: UpdateProfileDto): UserResponseDto {
+        val user = findActiveUser(userId)
+        user.name = dto.name
+        dto.avatar?.let { user.avatar = it.ifBlank { null } }
+        return UserResponseDto.from(userRepository.save(user))
+    }
+
+    /**
+     * @description 更新当前登录用户自己的偏好设置（部分合并：仅覆盖非空字段）
+     * @param userId 用户 ID
+     * @param dto 偏好更新内容
+     * @returns UserResponseDto 更新后的资料
+     *
+     * @example userService.updateOwnPreferences(principal.userId, UpdatePreferencesDto(theme = "dark"))
+     */
+    @Transactional
+    fun updateOwnPreferences(userId: String, dto: UpdatePreferencesDto): UserResponseDto {
+        // 转为 patch map 后复用既有 mergePreferences 语义（顶层非空覆盖、嵌套对象整体覆盖）
+        @Suppress("UNCHECKED_CAST")
+        val patch = (objectMapper.convertValue(dto, Map::class.java) as Map<String, Any?>)
+            .filterValues { it != null }
+        updatePreferences(userId, patch)
+        return UserResponseDto.from(findActiveUser(userId))
+    }
+
+    /**
+     * @description 查找未软删除的用户，不存在或已软删除抛 404
+     * @param userId 用户 ID
+     * @returns User 用户实体
+     */
+    private fun findActiveUser(userId: String): User = userRepository.findById(userId)
+        .orElseThrow { SystemException.dataNotFound("用户不存在") }
+        .takeIf { it.deletedAt == null }
+        ?: throw SystemException.dataNotFound("用户不存在")
+
     @Transactional
     fun updateLoginInfo(userId: String, clientIp: String?) {
         val user = userRepository.findById(userId).orElseThrow()
@@ -272,7 +330,7 @@ class UserService(
         val page = userRepository.findAll(spec, pageable)
         return UserListResponseDto(
             list = page.content.map { u ->
-                UserListItemDto(u.id, u.email, u.name, u.emailVerified, u.isActive, u.lastLoginAt, u.loginCount, u.createdAt)
+                UserListItemDto(u.id, u.email, u.name, u.avatar, u.emailVerified, u.isActive, u.lastLoginAt, u.loginCount, u.createdAt)
             },
             total = page.totalElements,
             page = dto.page,

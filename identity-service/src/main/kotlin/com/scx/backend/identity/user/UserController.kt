@@ -5,6 +5,7 @@ import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.dto.MessageDto
 import com.scx.backend.common.security.Admin
 import com.scx.backend.common.security.AuthPrincipal
+import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.util.IpUtils
 import com.scx.backend.commonaudit.annotation.OperationLog
 import com.scx.backend.commonaudit.toClientInfo
@@ -94,6 +95,29 @@ class UserController(
         return tokens
     }
 
+    // ============ 个人资料（当前登录用户自查自改） ============
+
+    @Operation(summary = "查询个人资料", description = "返回当前登录用户自己的完整资料（含偏好设置与头像文件 ID）")
+    @GetMapping("/me")
+    fun getProfile(@AuthenticationPrincipal principal: AuthPrincipal?): UserResponseDto =
+        userService.getProfile(requirePrincipal(principal).userId)
+
+    @OperationLog(module = "用户管理", action = "更新个人资料")
+    @Operation(summary = "更新个人资料", description = "更新当前登录用户的名称与头像（头像传文件 ID，空字符串清除）")
+    @PutMapping("/me")
+    fun updateProfile(
+        @Valid @RequestBody dto: UpdateProfileDto,
+        @AuthenticationPrincipal principal: AuthPrincipal?,
+    ): UserResponseDto = userService.updateProfile(requirePrincipal(principal).userId, dto)
+
+    @OperationLog(module = "用户管理", action = "更新偏好设置")
+    @Operation(summary = "更新偏好设置", description = "部分更新当前登录用户的偏好（仅覆盖传入的非空字段，嵌套对象整体覆盖）")
+    @PutMapping("/me/preferences")
+    fun updatePreferences(
+        @Valid @RequestBody dto: UpdatePreferencesDto,
+        @AuthenticationPrincipal principal: AuthPrincipal?,
+    ): UserResponseDto = userService.updateOwnPreferences(requirePrincipal(principal).userId, dto)
+
     // ============ 角色管理 ============
 
     @OperationLog(module = "用户管理", action = "分配角色")
@@ -180,4 +204,12 @@ class UserController(
         val count = userService.toggleUserStatus(principal.userId, dto)
         return CountResultDto(count, "状态更新成功")
     }
+
+    /**
+     * @description 解析认证主体；直连访问缺失网关注入的身份头时返回 401（而非 500）
+     * @param principal 当前认证主体（可能为 null）
+     * @returns AuthPrincipal 非空认证主体
+     */
+    private fun requirePrincipal(principal: AuthPrincipal?): AuthPrincipal =
+        principal ?: throw SystemException.missingToken("缺少认证信息（需经网关访问，或直连调试时携带 X-User-Id 请求头）")
 }
