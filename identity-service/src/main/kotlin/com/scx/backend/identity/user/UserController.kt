@@ -119,6 +119,13 @@ class UserController(
         @AuthenticationPrincipal principal: AuthPrincipal?,
     ): UserResponseDto = userService.updateOwnPreferences(requirePrincipal(principal).userId, dto)
 
+    @Operation(summary = "查询当前用户菜单与权限", description = "返回当前登录用户可见的菜单树与按钮权限点集合（管理员直通全部菜单，权限点为通配 *）")
+    @GetMapping("/me/menus")
+    fun getMyMenus(@AuthenticationPrincipal principal: AuthPrincipal?): MeMenusResponseDto {
+        val auth = requirePrincipal(principal)
+        return userService.getMyMenus(auth.userId, auth.isAdmin)
+    }
+
     // ============ 角色管理 ============
 
     @OperationLog(module = "用户管理", action = "分配角色")

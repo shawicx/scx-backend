@@ -24,6 +24,8 @@ import com.scx.backend.identity.user.dto.DeleteUsersDto
 import com.scx.backend.identity.user.dto.LoginResponseDto
 import com.scx.backend.identity.user.dto.LoginUserDto
 import com.scx.backend.identity.user.dto.LoginWithPasswordDto
+import com.scx.backend.identity.user.dto.MeMenuNodeDto
+import com.scx.backend.identity.user.dto.MeMenusResponseDto
 import com.scx.backend.identity.user.dto.QueryUsersDto
 import com.scx.backend.identity.user.dto.RegisterUserDto
 import com.scx.backend.identity.user.dto.ToggleUserStatusDto
@@ -35,6 +37,7 @@ import com.scx.backend.identity.user.dto.UserResponseDto
 import com.scx.backend.identity.user.dto.UserRoleResponseDto
 import com.scx.backend.identity.user.dto.UserRoleSummaryDto
 import com.scx.backend.identity.user.dto.UserPermissionSummaryDto
+import com.scx.backend.rbac.entity.Permission
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
 import com.scx.backend.identity.repository.UserRepository
@@ -412,6 +415,66 @@ class UserService(
         if (isSuperAdmin(userId)) return true
         // code 以 ADMIN 开头的角色视为管理员
         return userRoleRepository.existsByUserIdAndRoleCodePrefix(userId, "ADMIN")
+    }
+
+    // ============ 当前用户菜单与权限 ============
+
+    /**
+     * @description 查询当前登录用户可见的菜单树与按钮权限点集合
+     * @param userId 当前用户 ID
+     * @param isAdmin 是否管理员（网关 X-User-Admin 注入；管理员直通全部可见菜单，权限点为通配 *）
+     * @returns MeMenusResponseDto 菜单树 + 权限点集合
+     */
+    fun getMyMenus(userId: String, isAdmin: Boolean): MeMenusResponseDto {
+        val allMenus = permissionRepository.findMenuTreeNodes()
+        if (isAdmin) {
+            return MeMenusResponseDto(menus = buildMenuTree(allMenus), permissions = listOf("*"))
+        }
+        val roleIds = userRoleRepository.findByUserId(userId).map { it.roleId }
+        if (roleIds.isEmpty()) {
+            return MeMenusResponseDto(menus = emptyList(), permissions = emptyList())
+        }
+        val granted = permissionRepository.findPermissionsByRoleIds(roleIds).distinctBy { it.id }
+        // 授权菜单向上补全父链：父菜单未授权时仍作为容器显示，否则树会断裂
+        val byId = allMenus.associateBy { it.id }
+        val visibleMenuIds = mutableSetOf<String>()
+        granted.asSequence()
+            .filter { it.type == "MENU" && it.status == 1 && it.visible == 1 }
+            .forEach { grantedMenu ->
+                var cursor: Permission? = grantedMenu
+                while (cursor != null && visibleMenuIds.add(cursor.id)) {
+                    cursor = cursor.parentId?.let { byId[it] }
+                }
+            }
+        val visibleMenus = allMenus.filter { it.id in visibleMenuIds }
+        val permissions = granted
+            .filter { it.type == "BUTTON" && it.status == 1 && it.action != null && it.resource != null }
+            .map { "${it.resource}:${it.action}" }
+            .distinct()
+        return MeMenusResponseDto(menus = buildMenuTree(visibleMenus), permissions = permissions)
+    }
+
+    /**
+     * @description 将平铺菜单集合按 parentId 组装为树（sort 升序、同序按名称，根节点为 parentId=null）
+     * @param nodes 平铺菜单集合
+     * @returns List<MeMenuNodeDto> 树形结构
+     */
+    private fun buildMenuTree(nodes: List<Permission>): List<MeMenuNodeDto> {
+        val byParent = nodes.groupBy { it.parentId }
+        /** @description 将单个菜单实体递归转换为 DTO（children 取同 parentId 子集并按 sort/名称排序） */
+        fun toDto(p: Permission): MeMenuNodeDto = MeMenuNodeDto(
+            id = p.id,
+            name = p.name,
+            path = p.path,
+            icon = p.icon,
+            sort = p.sort,
+            children = (byParent[p.id] ?: emptyList())
+                .sortedWith(compareBy({ it.sort }, { it.name }))
+                .map { toDto(it) },
+        )
+        return (byParent[null] ?: emptyList())
+            .sortedWith(compareBy({ it.sort }, { it.name }))
+            .map { toDto(it) }
     }
 
     // ============ 管理操作 ============
