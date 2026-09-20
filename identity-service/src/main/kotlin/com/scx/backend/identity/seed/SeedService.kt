@@ -131,6 +131,14 @@ class SeedService(
             )),
             MenuSeed("操作日志", "/logs/operations", "operation-logs", 6, emptyList()),
             MenuSeed("登录日志", "/logs/logins", "login-logs", 7, emptyList()),
+            MenuSeed("字典管理", "/dicts", "dicts", 8, listOf(
+                ButtonSeed("create", "dict-type"),
+                ButtonSeed("update", "dict-type"),
+                ButtonSeed("delete", "dict-type"),
+                ButtonSeed("create", "dict-data"),
+                ButtonSeed("update", "dict-data"),
+                ButtonSeed("delete", "dict-data"),
+            )),
         )
 
         dict.forEach { menuSeed ->

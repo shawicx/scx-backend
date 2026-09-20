@@ -47,7 +47,7 @@ spring:
             - id: rbac-service
               uri: ${RBAC_BASE_URL:http://localhost:3002}
               predicates:
-                - Path=/api/roles/**,/api/permissions/**
+                - Path=/api/roles/**,/api/permissions/**,/api/dicts/**
             # 通知服务：邮件 + 消息渠道 + 站内信/公告
             - id: notification-service
               uri: ${NOTIFICATION_BASE_URL:http://localhost:3003}
