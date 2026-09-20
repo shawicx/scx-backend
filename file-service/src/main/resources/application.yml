@@ -73,3 +73,11 @@ minio:
   bucket: ${MINIO_BUCKET:scx-files}
   # 预签名 URL 有效期（秒，默认 1 小时）
   presign-expiry-seconds: ${MINIO_PRESIGN_EXPIRY:3600}
+
+# 大文件分片上传（单文件上限与会话有效期；分片大小由客户端在 5MB-64MB 内自选）
+file:
+  upload:
+    # 单文件大小上限（字节，默认 5GB）
+    max-size: ${FILE_MAX_UPLOAD_SIZE:5368709120}
+    # 上传会话有效期（小时，分片上传滑动续期）
+    session-ttl-hours: ${FILE_UPLOAD_SESSION_TTL_HOURS:24}

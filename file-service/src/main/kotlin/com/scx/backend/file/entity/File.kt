@@ -33,13 +33,16 @@ class File(
     var mimeType: String,
 
     @Column(name = "size", nullable = false)
-    var size: Int,
+    var size: Long,
 
     @Column(name = "path", length = 500, nullable = false)
     var path: String,
 
     @Column(name = "url", length = 500, nullable = false)
     var url: String,
+
+    @Column(name = "\"fileHash\"", length = 64)
+    var fileHash: String? = null,
 
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),

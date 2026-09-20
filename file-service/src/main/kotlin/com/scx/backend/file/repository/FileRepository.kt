@@ -8,4 +8,10 @@ import org.springframework.stereotype.Repository
 @Repository
 interface FileRepository : JpaRepository<File, String>, JpaSpecificationExecutor<File> {
     fun findByUserId(userId: String): List<File>
+
+    /** 秒传：同用户未删除文件中按哈希取最近一条 */
+    fun findFirstByUserIdAndFileHashAndDeletedAtIsNullOrderByCreatedAtDesc(
+        userId: String,
+        fileHash: String,
+    ): File?
 }

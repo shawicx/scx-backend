@@ -51,7 +51,7 @@ data class FileResponseDto(
     val mimeType: String,
 
     @Schema(description = "文件大小（字节）")
-    val size: Int,
+    val size: Long,
 
     @Schema(description = "存储路径")
     val path: String,

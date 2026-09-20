@@ -1,5 +1,6 @@
 package com.scx.backend.file.config
 
+import io.minio.MinioAsyncClient
 import io.minio.MinioClient
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -9,10 +10,12 @@ import org.springframework.context.annotation.Configuration
 /**
  * @description MinIO 客户端配置
  *
- * 提供两个客户端 Bean：
+ * 提供三个客户端 Bean：
  * - minioClient：服务内部调用（endpoint 为服务可达地址，如容器内 http://minio:9000）
  * - minioUrlClient：生成对外访问 URL（endpoint 为浏览器可达地址 MINIO_PUBLIC_ENDPOINT，
  *   未配置时复用 minioClient），避免容器内部地址生成的预签名 URL 浏览器无法访问
+ * - minioAsyncClient：分片上传（MinIO 9.x 的 multipart API 仅在异步客户端提供，
+ *   同步等待包装见 MinioStorageService）
  */
 @Configuration
 class MinioConfig {
@@ -30,6 +33,23 @@ class MinioConfig {
         @Value("\${minio.access-key}") accessKey: String,
         @Value("\${minio.secret-key}") secretKey: String,
     ): MinioClient = MinioClient.builder()
+        .endpoint(endpoint)
+        .credentials(accessKey, secretKey)
+        .build()
+
+    /**
+     * @description 分片上传使用的异步 MinIO 客户端（9.x multipart API 的唯一入口）
+     * @param endpoint MinIO S3 API 地址
+     * @param accessKey 访问密钥
+     * @param secretKey 私有密钥
+     * @returns MinioAsyncClient
+     */
+    @Bean
+    fun minioAsyncClient(
+        @Value("\${minio.endpoint}") endpoint: String,
+        @Value("\${minio.access-key}") accessKey: String,
+        @Value("\${minio.secret-key}") secretKey: String,
+    ): MinioAsyncClient = MinioAsyncClient.builder()
         .endpoint(endpoint)
         .credentials(accessKey, secretKey)
         .build()
