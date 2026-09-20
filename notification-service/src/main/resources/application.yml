@@ -8,6 +8,28 @@ spring:
   config:
     import: "optional:file:.env[.properties]"
 
+  # 数据源（JPA）—— 共享库 + 逻辑隔离：notification 访问 notification_channels /
+  # notifications / user_notifications，只读解析 users / user_roles
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_DATABASE:scx-backend}
+    username: ${DB_USERNAME:scx}
+    password: ${DB_PASSWORD:scx_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
   # 邮件（敏感凭据 SMTP 授权码必须通过环境变量注入，不设默认值）
   mail:
     host: ${MAIL_HOST:smtp.example.com}

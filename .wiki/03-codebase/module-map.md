@@ -85,12 +85,14 @@
 | --- | --- | --- |
 | `/roles/create` | POST | 创建角色 |
 | `/roles/list` | GET | 分页列表 |
+| `/roles/all` | GET | 全量角色列表（不分页，供分配角色场景一次加载） |
 | `/roles/detail` | GET | 按 ID 查询 |
 | `/roles/by-code` | GET | 按编码查询 |
 | `/roles/update` | PUT | 更新 |
 | `/roles/delete` | DELETE | 删除（`isSystem=true` 不可删） |
 | `/roles/assign-permissions` | POST | 批量分配权限 |
 | `/roles/permissions` | GET | 查询角色权限 |
+| `/roles/permission-tree` | GET | 角色权限树（全量树 + `checked` 标记，供分配权限树形展示与默认勾选） |
 | `/roles/remove-permission` | DELETE | 移除单个权限 |
 
 规则：`name`、`code` 唯一；权限分配委托 `RolePermissionService`（自动去重）。

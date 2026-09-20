@@ -48,11 +48,11 @@ spring:
               uri: ${RBAC_BASE_URL:http://localhost:3002}
               predicates:
                 - Path=/api/roles/**,/api/permissions/**
-            # 通知服务：邮件
+            # 通知服务：邮件 + 消息渠道 + 站内信/公告
             - id: notification-service
               uri: ${NOTIFICATION_BASE_URL:http://localhost:3003}
               predicates:
-                - Path=/api/mail/**
+                - Path=/api/mail/**,/api/notifications/**,/api/channels/**
             # 文件服务
             - id: file-service
               uri: ${FILE_BASE_URL:http://localhost:3004}

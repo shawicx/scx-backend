@@ -10,6 +10,8 @@ import com.scx.backend.rbac.role.dto.RoleListResponseDto
 import com.scx.backend.rbac.role.dto.RoleResponseDto
 import com.scx.backend.rbac.role.dto.UpdateRoleDto
 import com.scx.backend.rbac.permission.dto.PermissionSummaryDto
+import com.scx.backend.rbac.permission.dto.RolePermissionTreeResponseDto
+import com.scx.backend.rbac.permission.PermissionService
 import com.scx.backend.rbac.rolepermission.RolePermissionService
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RoleRepository
@@ -27,6 +29,7 @@ class RoleService(
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
     private val rolePermissionService: RolePermissionService,
+    private val permissionService: PermissionService,
 ) {
     private val logger = LoggerFactory.getLogger(RoleService::class.java)
 
@@ -59,6 +62,18 @@ class RoleService(
             limit = limit,
         )
     }
+
+    /**
+     * @description 全量角色列表（不分页）
+     *
+     * 供「为用户分配角色」等场景一次性加载全部角色，避免分页接口默认只取首页导致可选角色缺失。
+     *
+     * @returns List<RoleResponseDto> 全部角色，按创建时间倒序（与分页列表排序一致）
+     *
+     * @example roleService.getAllRoles()
+     */
+    fun getAllRoles(): List<RoleResponseDto> =
+        roleRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).map { RoleResponseDto.from(it) }
 
     fun findById(id: String): RoleResponseDto {
         val role = roleRepository.findById(id).orElseThrow {
@@ -148,6 +163,25 @@ class RoleService(
         val permissionIds = rolePermissionService.getPermissionsByRole(roleId)
         if (permissionIds.isEmpty()) return emptyList()
         return permissionRepository.findAllById(permissionIds).map { PermissionSummaryDto.from(it) }
+    }
+
+    /**
+     * @description 角色权限树：全量权限树 + 该角色已有权限标记 checked
+     *
+     * 供「为角色分配权限」弹窗一次请求完成全量加载、树形展示与已有权限默认勾选；
+     * checked 仅反映角色当前的直接授权，父子级联展示由前端处理。
+     *
+     * @param roleId 角色 ID
+     * @returns List<RolePermissionTreeResponseDto> 带勾选状态的完整权限树
+     *
+     * @example roleService.getRolePermissionTree("01AROLE...")
+     */
+    fun getRolePermissionTree(roleId: String): List<RolePermissionTreeResponseDto> {
+        if (!roleRepository.existsById(roleId)) {
+            throw SystemException.dataNotFound("Role with ID '$roleId' not found")
+        }
+        val checkedPermissionIds = rolePermissionService.getPermissionsByRole(roleId).toSet()
+        return permissionService.getCheckedTree(checkedPermissionIds)
     }
 
     /**

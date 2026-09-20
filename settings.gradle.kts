@@ -18,7 +18,7 @@ pluginManagement {
 //                       AccessLogInterceptor/AuthContextResolver，依赖 common，供 Servlet 服务使用；
 //                       WebFlux 网关不依赖本模块）
 // - common-audit        审计日志共享组件（操作/登录日志实体、仓库与建表迁移，依赖 common-web，
-//                       供有数据库的服务使用；notification/网关不依赖本模块）
+//                       供有数据库的服务使用；网关不依赖本模块）
 // - gateway             API 网关（集中鉴权 + 路由，WebFlux 栈）
 // - identity-service    身份认证服务（用户/登录/令牌）
 // - rbac-service        角色权限服务（角色/权限/关联表）

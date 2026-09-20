@@ -30,7 +30,7 @@ import java.net.http.HttpResponse
     properties = [
         "mail.enabled=false", // 用 StubMailService，不连真实 SMTP
         "spring.flyway.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=none",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",
         "spring.datasource.url=jdbc:h2:mem:mailTest;MODE=PostgreSQL",
         "spring.datasource.driver-class-name=org.h2.Driver",

@@ -9,6 +9,7 @@ import com.scx.backend.rbac.permission.dto.PermissionMenuTreeDto
 import com.scx.backend.rbac.permission.dto.PermissionQueryDto
 import com.scx.backend.rbac.permission.dto.PermissionResponseDto
 import com.scx.backend.rbac.permission.dto.PermissionTreeResponseDto
+import com.scx.backend.rbac.permission.dto.RolePermissionTreeResponseDto
 import com.scx.backend.rbac.permission.dto.UpdatePermissionDto
 import com.scx.backend.rbac.repository.PermissionRepository
 import com.scx.backend.rbac.repository.RolePermissionRepository
@@ -205,6 +206,18 @@ class PermissionService(
         return buildTree(all, null)
     }
 
+    /**
+     * @description 全量权限树（含按钮），并按已勾选权限 ID 集合标记 checked
+     * @param checkedPermissionIds 需要默认勾选的权限 ID 集合（如某角色已分配的权限）
+     * @returns List<RolePermissionTreeResponseDto> 带勾选状态的完整权限树
+     *
+     * @example permissionService.getCheckedTree(setOf("01J..."))
+     */
+    fun getCheckedTree(checkedPermissionIds: Set<String>): List<RolePermissionTreeResponseDto> {
+        val all = permissionRepository.findAll(Sort.by(Sort.Direction.ASC, "sort").and(Sort.by(Sort.Direction.DESC, "createdAt")))
+        return buildCheckedTree(all, null, checkedPermissionIds)
+    }
+
     /** 菜单树（仅可见启用的 MENU） */
     fun getMenuTree(): List<PermissionMenuTreeDto> {
         val menus = permissionRepository.findMenuTreeNodes()
@@ -234,6 +247,30 @@ class PermissionService(
                         children = buildTree(all, perm.id),
                     )
                 }
+            }
+
+    /**
+     * @description 递归构建带勾选状态的权限树
+     * @param all 全量权限实体列表
+     * @param parentId 当前递归层级的父 ID（根节点为 null）
+     * @param checkedPermissionIds 已勾选权限 ID 集合
+     * @returns List<RolePermissionTreeResponseDto> 当前层级下的树节点列表
+     */
+    private fun buildCheckedTree(
+        all: List<Permission>,
+        parentId: String?,
+        checkedPermissionIds: Set<String>,
+    ): List<RolePermissionTreeResponseDto> =
+        all.filter { it.parentId == parentId }
+            .map { perm ->
+                RolePermissionTreeResponseDto(
+                    id = perm.id, name = perm.name, type = perm.type, action = perm.action,
+                    resource = perm.resource, parentId = perm.parentId, level = perm.level,
+                    path = perm.path, icon = perm.icon, sort = perm.sort, visible = perm.visible,
+                    status = perm.status, description = perm.description,
+                    checked = perm.id in checkedPermissionIds,
+                    children = buildCheckedTree(all, perm.id, checkedPermissionIds),
+                )
             }
 
     private fun buildMenuTree(all: List<Permission>, parentId: String?): List<PermissionMenuTreeDto> =

@@ -12,21 +12,30 @@ import kotlin.random.Random
  */
 @Service
 @ConditionalOnProperty(name = ["mail.enabled"], havingValue = "false")
-class StubMailService : MailService {
+class StubMailService(
+    private val mailSendRecorder: MailSendRecorder,
+) : MailService {
 
     override fun sendVerificationCode(to: String): MailService.SendResult {
         val code = Random.nextInt(100000, 1000000).toString()
+        mailSendRecorder.record(to, "验证码邮件")
         return MailService.SendResult(success = true, message = "验证码邮件发送成功（stub）", code = code)
     }
 
-    override fun sendWelcomeEmail(to: String, username: String) =
-        MailService.SendResult(true, "欢迎邮件发送成功（stub）")
+    override fun sendWelcomeEmail(to: String, username: String): MailService.SendResult {
+        mailSendRecorder.record(to, "欢迎邮件")
+        return MailService.SendResult(true, "欢迎邮件发送成功（stub）")
+    }
 
-    override fun sendPasswordResetEmail(to: String, resetToken: String, resetUrl: String) =
-        MailService.SendResult(true, "密码重置邮件发送成功（stub）")
+    override fun sendPasswordResetEmail(to: String, resetToken: String, resetUrl: String): MailService.SendResult {
+        mailSendRecorder.record(to, "密码重置邮件")
+        return MailService.SendResult(true, "密码重置邮件发送成功（stub）")
+    }
 
-    override fun sendHtmlMail(to: String, subject: String, html: String) =
-        MailService.SendResult(true, "HTML邮件发送成功（stub）")
+    override fun sendHtmlMail(to: String, subject: String, html: String): MailService.SendResult {
+        mailSendRecorder.record(to, subject)
+        return MailService.SendResult(true, "HTML邮件发送成功（stub）")
+    }
 
     override fun testConnection() = MailService.SendResult(true, "邮件配置测试成功（stub）")
 }

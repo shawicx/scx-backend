@@ -311,6 +311,67 @@ data class PermissionSummaryDto(
     }
 }
 
+/**
+ * @description 角色权限树节点响应（全量权限树节点 + 角色勾选状态）
+ *
+ * 供「为角色分配权限」场景一次请求完成全量加载、树形展示与已有权限默认勾选。
+ * 相比 PermissionTreeResponseDto 裁剪了时间戳、新增 checked 字段。
+ *
+ * @property checked 该权限是否已分配给当前角色（前端默认勾选依据，父子级联展示由前端处理）
+ * @property children 子节点列表
+ *
+ * @example RolePermissionTreeResponseDto(id = "01J...", name = "用户管理", type = "MENU", action = null,
+ * resource = null, parentId = null, level = 1, path = "/users", icon = "users", sort = 0, visible = 1,
+ * status = 1, description = null, checked = true, children = emptyList())
+ */
+@Schema(description = "角色权限树节点响应（含子节点与角色勾选状态）")
+data class RolePermissionTreeResponseDto(
+    @Schema(description = "权限 ID")
+    val id: String,
+
+    @Schema(description = "权限名称")
+    val name: String,
+
+    @Schema(description = "权限类型（MENU / BUTTON）")
+    val type: String,
+
+    @Schema(description = "操作动作")
+    val action: String?,
+
+    @Schema(description = "资源名称")
+    val resource: String?,
+
+    @Schema(description = "父权限 ID")
+    val parentId: String?,
+
+    @Schema(description = "层级")
+    val level: Int,
+
+    @Schema(description = "路由路径")
+    val path: String?,
+
+    @Schema(description = "图标")
+    val icon: String?,
+
+    @Schema(description = "排序号")
+    val sort: Int,
+
+    @Schema(description = "是否可见（0 / 1）")
+    val visible: Int,
+
+    @Schema(description = "状态（0 / 1）")
+    val status: Int,
+
+    @Schema(description = "权限描述")
+    val description: String?,
+
+    @Schema(description = "是否已分配给当前角色（默认勾选）")
+    val checked: Boolean,
+
+    @Schema(description = "子节点列表")
+    val children: List<RolePermissionTreeResponseDto>?,
+)
+
 /** 权限列表响应 */
 @Schema(description = "权限列表响应")
 data class PermissionListResponseDto(

@@ -2,13 +2,16 @@ package com.scx.backend.notification
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableAsync
 
 /**
  * @description 通知服务启动入口。邮件逻辑在 Step 3 迁入。
  *
  * 扫描根包 com.scx.backend 以发现 common 模块的共享配置与组件
  * （JacksonConfig / GlobalResponseHandler / GlobalExceptionHandler 等）。
+ * @EnableAsync 用于 EMAIL 渠道批量投递的异步执行。
  */
+@EnableAsync
 @SpringBootApplication(scanBasePackages = ["com.scx.backend"])
 class NotificationApplication
 

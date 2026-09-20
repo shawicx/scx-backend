@@ -118,8 +118,13 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       MAIL_ENABLED: "false"
       APP_NAME: SCX Service
+      DB_HOST: postgres
+      DB_PORT: 5433
     ports:
       - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   file-service:

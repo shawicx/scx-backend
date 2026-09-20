@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 class SmtpMailService(
     private val mailSender: JavaMailSender,
     private val templateEngine: SpringTemplateEngine,
+    private val mailSendRecorder: MailSendRecorder,
     @Value("\${spring.mail.username:noreply@scx.dev}") private val fromEmail: String,
     @Value("\${app.name:SCX Service}") private val appName: String,
     @Value("\${mail.timeout-ms:30000}") private val timeoutMs: Long,
@@ -94,6 +95,7 @@ class SmtpMailService(
         return try {
             sendWithTimeout(buildMimeMessage(to, subject, html))
             logger.info("邮件发送成功: {} - {}", to, subject)
+            mailSendRecorder.record(to, subject)
             MailService.SendResult(true, "邮件发送成功", code = code)
         } catch (e: Exception) {
             val error = parseError(e)

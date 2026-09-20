@@ -43,6 +43,10 @@ class RoleController(
         @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") limit: Int,
     ) = roleService.findAll(page, limit)
 
+    @Operation(summary = "全量角色列表", description = "不分页返回全部角色，供分配角色等场景一次性加载")
+    @GetMapping("/all")
+    fun getAllRoles(): List<RoleResponseDto> = roleService.getAllRoles()
+
     @Operation(summary = "角色详情", description = "根据角色 ID 查询角色详情")
     @GetMapping("/detail")
     fun findById(@Parameter(description = "角色 ID") @RequestParam id: String): RoleResponseDto =
@@ -78,6 +82,11 @@ class RoleController(
     @GetMapping("/permissions")
     fun getRolePermissions(@Parameter(description = "角色 ID") @RequestParam id: String) =
         roleService.getRolePermissions(id)
+
+    @Operation(summary = "角色权限树", description = "返回全量权限树并标记该角色已有权限（checked），供分配权限时树形展示与默认勾选")
+    @GetMapping("/permission-tree")
+    fun getRolePermissionTree(@Parameter(description = "角色 ID") @RequestParam id: String) =
+        roleService.getRolePermissionTree(id)
 
     @OperationLog(module = "角色管理", action = "移除权限")
     @Operation(summary = "移除角色权限", description = "从角色中移除指定权限")
