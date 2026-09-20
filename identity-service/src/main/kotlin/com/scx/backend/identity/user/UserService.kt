@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.constants.TtlConstants
 import com.scx.backend.common.exception.SystemException
+import com.scx.backend.common.security.DataScope
 import com.scx.backend.common.util.CryptoUtil
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.commonaudit.ClientInfo
@@ -115,8 +116,9 @@ class UserService(
             updateLoginInfo(user.id, clientInfo?.ip)
             val updated = userRepository.findById(user.id).orElseThrow()
             val admin = isAdmin(updated.id)
-            val access = authService.generateAccessToken(updated.id, updated.email, admin)
-            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
+            val scope = resolveDataScope(updated.id)
+            val access = authService.generateAccessToken(updated.id, updated.email, admin, scope)
+            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin, scope)
             loginLogRecorder.record(LoginType.EMAIL_CODE, dto.email, user.id, clientInfo, success = true)
             return LoginResponseDto.from(updated, access, refresh)
         } catch (e: SystemException) {
@@ -152,8 +154,9 @@ class UserService(
             updateLoginInfo(user.id, clientInfo?.ip)
             val updated = userRepository.findById(user.id).orElseThrow()
             val admin = isAdmin(updated.id)
-            val access = authService.generateAccessToken(updated.id, updated.email, admin)
-            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin)
+            val scope = resolveDataScope(updated.id)
+            val access = authService.generateAccessToken(updated.id, updated.email, admin, scope)
+            val refresh = authService.generateRefreshToken(updated.id, updated.email, admin, scope)
             loginLogRecorder.record(LoginType.PASSWORD, dto.email, user.id, clientInfo, success = true)
             return LoginResponseDto.from(updated, access, refresh)
         } catch (e: SystemException) {
@@ -180,11 +183,11 @@ class UserService(
     }
 
     /**
-     * 刷新令牌：传入 isAdmin 计算回调，刷新时重算管理员标志（角色变更后刷新即生效）
+     * 刷新令牌：传入 isAdmin / dataScope 计算回调，刷新时重算（角色变更后刷新即生效）
      */
     fun refreshTokens(refreshToken: String, clientInfo: ClientInfo?): TokenPair? {
         val userInfo = authService.validateRefreshToken(refreshToken)
-        val tokens = authService.refreshTokens(refreshToken) { userId -> isAdmin(userId) }
+        val tokens = authService.refreshTokens(refreshToken, { userId -> isAdmin(userId) }, { userId -> resolveDataScope(userId) })
         if (tokens != null && userInfo != null) {
             loginLogRecorder.record(LoginType.REFRESH, userInfo.email, userInfo.userId, clientInfo, success = true)
         } else {
@@ -415,6 +418,25 @@ class UserService(
         if (isSuperAdmin(userId)) return true
         // code 以 ADMIN 开头的角色视为管理员
         return userRoleRepository.existsByUserIdAndRoleCodePrefix(userId, "ADMIN")
+    }
+
+    /**
+     * @description 解析用户的数据权限范围（多角色合并取最宽，SUPER_ADMIN 隐含 ALL）
+     *
+     * 结果嵌入令牌 payload，由网关注入 X-User-DataScope 供下游行级过滤；
+     * 角色变更后刷新令牌即生效。
+     *
+     * @param userId 用户 ID
+     * @returns DataScope 合并后的数据范围
+     *
+     * @example userService.resolveDataScope("01JUSER...") // ALL / SELF
+     */
+    fun resolveDataScope(userId: String): DataScope {
+        if (isSuperAdmin(userId)) return DataScope.ALL
+        return userRoleRepository.findDataScopesByUserId(userId)
+            .map { DataScope.fromName(it) }
+            .maxByOrNull { it.width }
+            ?: DataScope.SELF
     }
 
     // ============ 当前用户菜单与权限 ============

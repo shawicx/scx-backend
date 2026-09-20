@@ -44,6 +44,7 @@ class RoleService(
             name = dto.name,
             code = dto.code,
             description = dto.description,
+            dataScope = requireConfigurableScope(dto.dataScope),
             // 系统角色标记只能由后端（SeedService）产生，不接受客户端设置
             isSystem = false,
         )
@@ -115,6 +116,7 @@ class RoleService(
         dto.name?.let { role.name = it }
         dto.code?.let { role.code = it }
         dto.description?.let { role.description = it }
+        dto.dataScope?.let { role.dataScope = requireConfigurableScope(it) }
         val updated = roleRepository.save(role)
         logger.info("Role updated: {} ({})", updated.name, updated.code)
         return RoleResponseDto.from(updated)
@@ -185,11 +187,30 @@ class RoleService(
     }
 
     /**
-     * 移除角色的单个权限
+     * @description 移除角色的单个权限
      */
     @Transactional
     fun removePermission(roleId: String, permissionId: String) {
         rolePermissionService.delete(roleId, permissionId)
         logger.info("Permission removed from role: {} - {}", roleId, permissionId)
+    }
+
+    /**
+     * @description 校验可配置的数据权限档位并归一化
+     *
+     * 当前仅开放 ALL / SELF；DEPT / DEPT_AND_CHILD / CUSTOM 为部门体系
+     * 预留档位，部门表上线前拒绝配置（避免"配了不生效"的暗坑）。
+     * 未配置时缺省 SELF。
+     *
+     * @param dataScope 请求携带的数据范围（可空）
+     * @returns String 归一化后的档位名
+     *
+     * @example requireConfigurableScope("all") // "ALL"
+     */
+    private fun requireConfigurableScope(dataScope: String?): String {
+        val normalized = dataScope?.trim()?.uppercase()
+        if (normalized == null || normalized.isEmpty()) return "SELF"
+        if (normalized == "ALL" || normalized == "SELF") return normalized
+        throw SystemException.invalidParameter("数据权限范围仅支持 ALL / SELF，部门级档位待部门体系上线后开放")
     }
 }

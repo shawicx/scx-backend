@@ -29,11 +29,18 @@ class TokenCodec(
      * @param email 用户邮箱
      * @param type 令牌类型（access / refresh）
      * @param isAdmin 是否为管理员
-     * @return 序列化后的 payload（userId, email, type, timestamp, isAdmin）
+     * @param dataScope 数据权限范围（旧调用方缺省 SELF）
+     * @return 序列化后的 payload（userId, email, type, timestamp, isAdmin, dataScope）
      *
-     * @example val payload = codec.buildPayload("01...", "a@b.com", "access", false)
+     * @example val payload = codec.buildPayload("01...", "a@b.com", "access", false, DataScope.SELF)
      */
-    fun buildPayload(userId: String, email: String, type: String, isAdmin: Boolean): Map<String, Any> =
+    fun buildPayload(
+        userId: String,
+        email: String,
+        type: String,
+        isAdmin: Boolean,
+        dataScope: DataScope = DataScope.SELF,
+    ): Map<String, Any> =
         // 用 LinkedHashMap 保证字段顺序，与历史令牌格式一致
         linkedMapOf<String, Any>(
             "userId" to userId,
@@ -41,6 +48,7 @@ class TokenCodec(
             "type" to type,
             "timestamp" to System.currentTimeMillis(),
             "isAdmin" to isAdmin,
+            "dataScope" to dataScope.name,
         )
 
     /**
@@ -85,8 +93,10 @@ class TokenCodec(
             val email = payload["email"] as? String ?: return null
             // isAdmin 为新增字段，旧令牌缺失时默认 false（向后兼容）
             val isAdmin = (payload["isAdmin"] as? Boolean) ?: false
+            // dataScope 为新增字段，旧令牌缺失时默认 SELF（最小数据权限）
+            val dataScope = DataScope.fromName(payload["dataScope"] as? String)
             // type 与 timestamp 不在此校验，留给调用方按类型处理
-            TokenPayload(userId, email, isAdmin)
+            TokenPayload(userId, email, isAdmin, dataScope)
         } catch (e: Exception) {
             null
         }

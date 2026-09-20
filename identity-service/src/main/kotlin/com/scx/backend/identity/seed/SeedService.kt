@@ -63,6 +63,7 @@ class SeedService(
                 code = SUPER_ADMIN_ROLE_CODE,
                 description = "系统内置超级管理员角色，拥有所有权限",
                 isSystem = true,
+                dataScope = "ALL",
             )
             roleRepository.save(role).also { logger.info("已创建 SUPER_ADMIN 角色") }
         }

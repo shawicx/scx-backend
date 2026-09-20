@@ -30,4 +30,10 @@ interface UserRoleRepository : JpaRepository<UserRole, String> {
             "JOIN Role r ON ur.roleId = r.id WHERE ur.userId = :userId AND r.code LIKE :prefix%",
     )
     fun existsByUserIdAndRoleCodePrefix(@Param("userId") userId: String, @Param("prefix") prefix: String): Boolean
+
+    /** 用户全部角色的数据权限范围（数据权限合并用） */
+    @Query(
+        "SELECT r.dataScope FROM UserRole ur JOIN Role r ON ur.roleId = r.id WHERE ur.userId = :userId",
+    )
+    fun findDataScopesByUserId(@Param("userId") userId: String): List<String>
 }

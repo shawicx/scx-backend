@@ -2,6 +2,7 @@ package com.scx.backend.file
 
 import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.exception.SystemException
+import com.scx.backend.common.security.DataScope
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.file.dto.DeleteFilesDto
 import com.scx.backend.file.dto.FileListResponseDto
@@ -26,7 +27,7 @@ import java.time.format.DateTimeFormatter
  *
  * 基于 MinIO 对象存储实现文件上传（单文件/批量）、列表查询、详情与批量软删除。
  * 桶为私有，入库的 url 为逻辑地址；接口响应中的 url 为临时预签名直链。
- * 数据按当前用户隔离，管理员（isAdmin）可跨用户查询与删除。
+ * 数据按数据权限范围（dataScope）过滤：ALL 可跨用户查询与删除，其余档位仅本人。
  */
 @Service
 class FileService(
@@ -109,19 +110,19 @@ class FileService(
     }
 
     /**
-     * @description 分页查询文件列表（软删除过滤 + 用户隔离）
+     * @description 分页查询文件列表（软删除过滤 + 数据范围过滤）
      * @param userId 当前用户 ID
-     * @param isAdmin 是否管理员（true 时不限制归属用户）
+     * @param dataScope 数据权限范围（ALL 查全部用户，SELF 仅本人）
      * @param dto 查询参数（分页/搜索/MIME 过滤/排序）
      * @returns FileListResponseDto 分页结果（url 为预签名直链）
      */
-    fun queryFiles(userId: String, isAdmin: Boolean, dto: QueryFilesDto): FileListResponseDto {
+    fun queryFiles(userId: String, dataScope: DataScope, dto: QueryFilesDto): FileListResponseDto {
         val spec = Specification<File> { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
             // 仅查未软删除的文件
             predicates.add(cb.isNull(root.get<Any>("deletedAt")))
-            // 用户隔离（管理员可查全部）
-            if (!isAdmin) {
+            // 数据范围过滤（ALL 查全部用户，其余档位按本人）
+            if (dataScope != DataScope.ALL) {
                 predicates.add(cb.equal(root.get<String>("userId"), userId))
             }
             // 按原始文件名模糊搜索（不区分大小写）
@@ -151,19 +152,19 @@ class FileService(
     }
 
     /**
-     * @description 获取文件详情（软删除视为不存在；非管理员仅可访问本人文件）
+     * @description 获取文件详情（软删除视为不存在；非 ALL 范围仅可访问本人文件）
      * @param fileId 文件 ID
      * @param userId 当前用户 ID
-     * @param isAdmin 是否管理员
+     * @param dataScope 数据权限范围
      * @returns FileResponseDto 文件详情（url 为预签名直链）
      */
-    fun getFile(fileId: String, userId: String, isAdmin: Boolean): FileResponseDto {
+    fun getFile(fileId: String, userId: String, dataScope: DataScope): FileResponseDto {
         val file = fileRepository.findById(fileId)
             .orElseThrow { SystemException.dataNotFound("文件不存在或已删除") }
         if (file.deletedAt != null) {
             throw SystemException.dataNotFound("文件不存在或已删除")
         }
-        if (!isAdmin && file.userId != userId) {
+        if (dataScope != DataScope.ALL && file.userId != userId) {
             throw SystemException.insufficientPermission("无权访问该文件")
         }
         return FileResponseDto.from(file, storageService.presignedGetUrl(file.path))
@@ -172,14 +173,14 @@ class FileService(
     /**
      * @description 批量软删除文件（置 deletedAt，MinIO 对象保留；跳过非本人/已删除项）
      * @param userId 当前用户 ID
-     * @param isAdmin 是否管理员（true 时可删除任意用户文件）
+     * @param dataScope 数据权限范围（ALL 可删除任意用户文件）
      * @param dto 删除请求（文件 ID 列表）
      * @returns CountResultDto count=受影响行数，message=提示信息
      */
     @Transactional
-    fun deleteFiles(userId: String, isAdmin: Boolean, dto: DeleteFilesDto): CountResultDto {
+    fun deleteFiles(userId: String, dataScope: DataScope, dto: DeleteFilesDto): CountResultDto {
         val targets = fileRepository.findAllById(dto.ids.distinct()).filter {
-            it.deletedAt == null && (isAdmin || it.userId == userId)
+            it.deletedAt == null && (dataScope == DataScope.ALL || it.userId == userId)
         }
         if (targets.isNotEmpty()) {
             val now = LocalDateTime.now()

@@ -1,22 +1,37 @@
 package com.scx.backend.file
 
+import com.scx.backend.common.dto.CountResultDto
 import com.scx.backend.common.exception.SystemErrorCode
 import com.scx.backend.common.exception.SystemException
+import com.scx.backend.common.security.DataScope
 import com.scx.backend.file.dto.DeleteFilesDto
+import com.scx.backend.file.dto.QueryFilesDto
 import com.scx.backend.file.entity.File
 import com.scx.backend.file.repository.FileRepository
 import com.scx.backend.file.storage.MinioStorageService
+import jakarta.persistence.criteria.CriteriaBuilder
+import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.Expression
+import jakarta.persistence.criteria.Path
+import jakarta.persistence.criteria.Predicate
+import jakarta.persistence.criteria.Root
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.domain.Specification
 import java.time.LocalDateTime
 import java.util.Optional
 
@@ -95,19 +110,19 @@ class FileServiceTest {
     // ---------- 详情 ----------
 
     @Test
-    fun `getFile denies other users file when not admin`() {
+    fun `getFile denies other users file for SELF scope`() {
         given(repository.findById("f-1")).willReturn(Optional.of(fileEntity(userId = "owner")))
-        val ex = assertThrows<SystemException> { fileService.getFile("f-1", "other", false) }
+        val ex = assertThrows<SystemException> { fileService.getFile("f-1", "other", DataScope.SELF) }
         assertEquals(SystemErrorCode.INSUFFICIENT_PERMISSION.code, ex.code)
     }
 
     @Test
-    fun `getFile allows other users file when admin`() {
+    fun `getFile allows other users file for ALL scope`() {
         val entity = fileEntity(userId = "owner")
         given(repository.findById("f-1")).willReturn(Optional.of(entity))
         given(storageService.presignedGetUrl(entity.path)).willReturn("http://presigned")
 
-        val dto = fileService.getFile("f-1", "admin-user", true)
+        val dto = fileService.getFile("f-1", "other", DataScope.ALL)
 
         assertEquals("http://presigned", dto.url)
     }
@@ -116,32 +131,83 @@ class FileServiceTest {
     fun `getFile treats soft-deleted as missing`() {
         given(repository.findById("f-1"))
             .willReturn(Optional.of(fileEntity(userId = "user-1", deletedAt = LocalDateTime.now())))
-        val ex = assertThrows<SystemException> { fileService.getFile("f-1", "user-1", false) }
+        val ex = assertThrows<SystemException> { fileService.getFile("f-1", "user-1", DataScope.SELF) }
         assertEquals(SystemErrorCode.DATA_NOT_FOUND.code, ex.code)
+    }
+
+    // ---------- 列表（数据范围过滤） ----------
+
+    @Test
+    fun `queryFiles applies owner filter only for SELF scope`() {
+        given(repository.findAll(any<Specification<File>>(), any<Pageable>())).willReturn(Page.empty())
+
+        fileService.queryFiles("u1", DataScope.SELF, QueryFilesDto())
+
+        val spec = captureQuerySpec()
+        val cb = mock(CriteriaBuilder::class.java)
+        val root = @Suppress("UNCHECKED_CAST") (mock(Root::class.java) as Root<File>)
+        val query = @Suppress("UNCHECKED_CAST") (mock(CriteriaQuery::class.java) as CriteriaQuery<*>)
+        val userExpr = @Suppress("UNCHECKED_CAST") (mock(Path::class.java) as Path<Any>)
+        given(root.get<Any>("userId")).willReturn(userExpr)
+        given(cb.isNull(any())).willReturn(mock(Predicate::class.java))
+        given(cb.equal(any<Expression<*>>(), any<Any>())).willReturn(mock(Predicate::class.java))
+
+        spec.toPredicate(root, query, cb)
+
+        verify(cb).equal(userExpr, "u1")
+    }
+
+    @Test
+    fun `queryFiles skips owner filter for ALL scope`() {
+        given(repository.findAll(any<Specification<File>>(), any<Pageable>())).willReturn(Page.empty())
+
+        fileService.queryFiles("u1", DataScope.ALL, QueryFilesDto())
+
+        val spec = captureQuerySpec()
+        val cb = mock(CriteriaBuilder::class.java)
+        val root = @Suppress("UNCHECKED_CAST") (mock(Root::class.java) as Root<File>)
+        val query = @Suppress("UNCHECKED_CAST") (mock(CriteriaQuery::class.java) as CriteriaQuery<*>)
+        given(root.get<Any>("userId")).willThrow(AssertionError("ALL 范围不应读取归属用户字段"))
+        given(cb.isNull(any())).willReturn(mock(Predicate::class.java))
+
+        spec.toPredicate(root, query, cb)
+
+        verify(cb, never()).equal(any<Expression<*>>(), any<Any>())
+    }
+
+    /**
+     * @description 捕获传给 findAll 的查询条件
+     * @returns Specification<File> 捕获的查询条件
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun captureQuerySpec(): Specification<File> {
+        val captor = ArgumentCaptor.forClass(Specification::class.java) as ArgumentCaptor<Specification<File>>
+        verify(repository).findAll(captor.capture(), any<Pageable>())
+        return captor.value
     }
 
     // ---------- 批量删除 ----------
 
     @Test
-    fun `deleteFiles only soft-deletes owned and undeleted files`() {
+    fun `deleteFiles only soft-deletes owned files for SELF scope`() {
         val own = fileEntity(id = "a", userId = "user-1")
         val others = fileEntity(id = "b", userId = "user-2")
-        val deleted = fileEntity(id = "c", userId = "user-1", deletedAt = LocalDateTime.now())
-        given(repository.findAllById(any())).willReturn(listOf(own, others, deleted))
+        given(repository.findAllById(any())).willReturn(listOf(own, others))
 
-        val result = fileService.deleteFiles("user-1", false, DeleteFilesDto(listOf("a", "b", "c")))
+        val result = fileService.deleteFiles("user-1", DataScope.SELF, DeleteFilesDto(listOf("a", "b")))
 
-        assertEquals(1, result.count, "仅本人未软删的 1 个文件应被删除")
+        assertEquals(1, result.count, "SELF 范围仅本人文件可删除")
         assertNotNull(own.deletedAt, "本人未删文件应被置删除时间")
+        assertNull(others.deletedAt, "他人文件不应被删除")
         verify(repository).saveAll(any<MutableIterable<File>>())
     }
 
     @Test
-    fun `deleteFiles admin can delete any users files`() {
+    fun `deleteFiles removes any users files for ALL scope`() {
         val others = fileEntity(id = "b", userId = "user-2")
         given(repository.findAllById(any())).willReturn(listOf(others))
 
-        val result = fileService.deleteFiles("admin-user", true, DeleteFilesDto(listOf("b")))
+        val result = fileService.deleteFiles("admin-user", DataScope.ALL, DeleteFilesDto(listOf("b")))
 
         assertEquals(1, result.count)
         assertNotNull(others.deletedAt)

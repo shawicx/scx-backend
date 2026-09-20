@@ -3,6 +3,8 @@ package com.scx.backend.identity.auth
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scx.backend.common.constants.CacheKeys
 import com.scx.backend.common.constants.TtlConstants
+import com.scx.backend.common.security.DataScope
+import com.scx.backend.common.security.TokenPayload
 import com.scx.backend.common.util.IdGenerator
 import com.scx.backend.identity.cache.CacheService
 import org.springframework.beans.factory.annotation.Value
@@ -16,7 +18,7 @@ import javax.crypto.spec.SecretKeySpec
  * 认证服务
  *
  * 自研令牌协议（非标准 JWT）：
- *  token = base64(JSON({userId,email,type,timestamp,isAdmin})) + "." + hexHmac
+ *  token = base64(JSON({userId,email,type,timestamp,isAdmin,dataScope})) + "." + hexHmac
  *
  * 关键点：
  *  - base64 使用标准编码
@@ -26,6 +28,8 @@ import javax.crypto.spec.SecretKeySpec
  *  - isAdmin 嵌入令牌：签发时由调用方（UserService）计算，校验时回填到 TokenPayload，
  *    使网关/拦截器无需回查数据库即可判定管理员（Step 5 令牌嵌入角色改造）。
  *    旧令牌缺失该字段时默认 false（向后兼容）。
+ *  - dataScope 嵌入令牌：数据权限范围（角色级，多角色取最宽），网关注入
+ *    X-User-DataScope 头供下游行级过滤。旧令牌缺失该字段时默认 SELF。
  */
 @Service
 class AuthService(
@@ -36,9 +40,10 @@ class AuthService(
     /**
      * 生成访问令牌（有效期 2 小时）
      * @param isAdmin 是否为管理员，嵌入令牌 payload
+     * @param dataScope 数据权限范围，嵌入令牌 payload（网关注入 X-User-DataScope）
      */
-    fun generateAccessToken(userId: String, email: String, isAdmin: Boolean = false): String {
-        val token = createToken(userId, email, "access", isAdmin)
+    fun generateAccessToken(userId: String, email: String, isAdmin: Boolean = false, dataScope: DataScope = DataScope.SELF): String {
+        val token = createToken(userId, email, "access", isAdmin, dataScope)
         cacheService.setWithMilliseconds(
             CacheKeys.accessToken(userId),
             token,
@@ -50,9 +55,10 @@ class AuthService(
     /**
      * 生成刷新令牌（有效期 7 天）
      * @param isAdmin 是否为管理员，嵌入令牌 payload
+     * @param dataScope 数据权限范围，嵌入令牌 payload
      */
-    fun generateRefreshToken(userId: String, email: String, isAdmin: Boolean = false): String {
-        val token = createToken(userId, email, "refresh", isAdmin)
+    fun generateRefreshToken(userId: String, email: String, isAdmin: Boolean = false, dataScope: DataScope = DataScope.SELF): String {
+        val token = createToken(userId, email, "refresh", isAdmin, dataScope)
         cacheService.setWithMilliseconds(
             CacheKeys.refreshToken(userId),
             token,
@@ -76,17 +82,23 @@ class AuthService(
     /**
      * 刷新令牌对
      *
-     * 刷新时重新计算 isAdmin（角色变更后刷新令牌即生效），保证嵌入的 admin 标志最新。
+     * 刷新时重新计算 isAdmin 与 dataScope（角色变更后刷新令牌即生效），保证嵌入令牌的标志最新。
      * @param isAdminProvider 根据用户 ID 计算 isAdmin 的回调（由 UserService 注入，避免 AuthService 反向依赖 UserService）
+     * @param dataScopeProvider 根据用户 ID 计算数据范围的回调（同上）
      * @return 新的 accessToken + refreshToken，验证失败返回 null
      */
-    fun refreshTokens(refreshToken: String, isAdminProvider: ((String) -> Boolean)? = null): TokenPair? {
+    fun refreshTokens(
+        refreshToken: String,
+        isAdminProvider: ((String) -> Boolean)? = null,
+        dataScopeProvider: ((String) -> DataScope)? = null,
+    ): TokenPair? {
         val userInfo = validateRefreshToken(refreshToken) ?: return null
-        // 刷新时重算 isAdmin：若调用方提供回调则用最新值，否则沿用旧令牌中的值
+        // 刷新时重算 isAdmin / dataScope：若调用方提供回调则用最新值，否则沿用旧令牌中的值
         val isAdmin = isAdminProvider?.invoke(userInfo.userId) ?: userInfo.isAdmin
+        val dataScope = dataScopeProvider?.invoke(userInfo.userId) ?: userInfo.dataScope
         return TokenPair(
-            accessToken = generateAccessToken(userInfo.userId, userInfo.email, isAdmin),
-            refreshToken = generateRefreshToken(userInfo.userId, userInfo.email, isAdmin),
+            accessToken = generateAccessToken(userInfo.userId, userInfo.email, isAdmin, dataScope),
+            refreshToken = generateRefreshToken(userInfo.userId, userInfo.email, isAdmin, dataScope),
         )
     }
 
@@ -121,15 +133,16 @@ class AuthService(
 
     // ---- 内部实现 ----
 
-    private fun createToken(userId: String, email: String, type: String, isAdmin: Boolean): String {
-        // 用 LinkedHashMap 保证字段顺序：userId, email, type, timestamp, isAdmin
-        // 与 Node JSON.stringify 行为一致（前 4 字段）；isAdmin 为新增字段
+    private fun createToken(userId: String, email: String, type: String, isAdmin: Boolean, dataScope: DataScope): String {
+        // 用 LinkedHashMap 保证字段顺序：userId, email, type, timestamp, isAdmin, dataScope
+        // 与 Node JSON.stringify 行为一致（前 4 字段）；isAdmin / dataScope 为新增字段
         val payload = linkedMapOf<String, Any>(
             "userId" to userId,
             "email" to email,
             "type" to type,
             "timestamp" to System.currentTimeMillis(),
             "isAdmin" to isAdmin,
+            "dataScope" to dataScope.name,
         )
         val json = objectMapper.writeValueAsString(payload)
         val tokenPart = Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
@@ -160,12 +173,14 @@ class AuthService(
             val email = payload["email"] as? String ?: return null
             // isAdmin 为新增字段，旧令牌缺失时默认 false（向后兼容）
             val isAdmin = (payload["isAdmin"] as? Boolean) ?: false
+            // dataScope 为新增字段，旧令牌缺失时默认 SELF（最小数据权限）
+            val dataScope = DataScope.fromName(payload["dataScope"] as? String)
 
             // 单点令牌校验：Redis 中缓存的令牌必须与请求令牌相等
             val cachedToken = cacheService.get<String>(cacheKeyFn(userId))
             if (cachedToken != token) return null
 
-            TokenPayload(userId, email, isAdmin)
+            TokenPayload(userId, email, isAdmin, dataScope)
         } catch (e: Exception) {
             null
         }

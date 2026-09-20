@@ -28,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile
  *
  * 路由前缀 /api/files（由 context-path=/api 提供）。
  * 上传基于 MinIO 对象存储（私有桶，响应 url 为临时预签名直链）；
- * 查询/详情/删除基于当前登录用户隔离数据，管理员（principal.isAdmin）可跨用户操作。
+ * 查询/详情/删除按数据权限范围（principal.dataScope）过滤：ALL 可跨用户操作，其余仅本人。
  */
 @Tag(name = "文件管理", description = "文件上传（单文件/批量）、查询、详情与批量删除")
 @RestController
@@ -57,7 +57,7 @@ class FileController(
     @GetMapping("/list")
     fun queryFiles(dto: QueryFilesDto, @AuthenticationPrincipal principal: AuthPrincipal?): FileListResponseDto {
         val user = requirePrincipal(principal)
-        return fileService.queryFiles(user.userId, user.isAdmin, dto)
+        return fileService.queryFiles(user.userId, user.dataScope, dto)
     }
 
     @Operation(summary = "文件详情", description = "根据文件 ID 查询文件详情（url 为临时预签名直链）")
@@ -67,7 +67,7 @@ class FileController(
         @AuthenticationPrincipal principal: AuthPrincipal?,
     ): FileResponseDto {
         val user = requirePrincipal(principal)
-        return fileService.getFile(id, user.userId, user.isAdmin)
+        return fileService.getFile(id, user.userId, user.dataScope)
     }
 
     @OperationLog(module = "文件管理", action = "批量删除文件")
@@ -78,7 +78,7 @@ class FileController(
         @AuthenticationPrincipal principal: AuthPrincipal?,
     ): CountResultDto {
         val user = requirePrincipal(principal)
-        return fileService.deleteFiles(user.userId, user.isAdmin, dto)
+        return fileService.deleteFiles(user.userId, user.dataScope, dto)
     }
 
     /**

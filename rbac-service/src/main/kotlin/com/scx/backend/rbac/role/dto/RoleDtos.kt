@@ -23,6 +23,9 @@ data class CreateRoleDto(
     @Schema(description = "角色描述（最长 255 字符）")
     @field:Size(max = 255, message = "角色描述不能超过255个字符")
     val description: String? = null,
+
+    @Schema(description = "数据权限范围：ALL（全部）/ SELF（仅本人），缺省 SELF；部门级档位待部门体系上线后开放")
+    val dataScope: String? = null,
 )
 
 /** 更新角色请求（ID 在 body 中） */
@@ -43,6 +46,9 @@ data class UpdateRoleDto(
     @Schema(description = "角色描述（最长 255 字符）")
     @field:Size(max = 255, message = "角色描述不能超过255个字符")
     val description: String? = null,
+
+    @Schema(description = "数据权限范围：ALL（全部）/ SELF（仅本人）")
+    val dataScope: String? = null,
 )
 
 /** 为角色分配权限请求（ID 在 body 中） */
@@ -91,6 +97,9 @@ data class RoleResponseDto(
     @get:JsonProperty("isSystem")
     val isSystem: Boolean,
 
+    @Schema(description = "数据权限范围（ALL / SELF）")
+    val dataScope: String,
+
     @Schema(description = "创建时间")
     val createdAt: LocalDateTime,
 
@@ -104,6 +113,7 @@ data class RoleResponseDto(
             code = role.code,
             description = role.description,
             isSystem = role.isSystem,
+            dataScope = role.dataScope,
             createdAt = role.createdAt,
             updatedAt = role.updatedAt,
         )

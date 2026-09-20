@@ -31,6 +31,10 @@ class Role(
     @Column(name = "\"isSystem\"", nullable = false)
     var isSystem: Boolean = false,
 
+    /** 数据权限范围（DataScope 枚举名：ALL/SELF，部门级档位预留） */
+    @Column(name = "\"dataScope\"", length = 20, nullable = false)
+    var dataScope: String = "SELF",
+
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 

@@ -51,6 +51,7 @@ class AuthGlobalFilter(
         const val HEADER_USER_ID = "X-User-Id"
         const val HEADER_USER_EMAIL = "X-User-Email"
         const val HEADER_USER_ADMIN = "X-User-Admin"
+        const val HEADER_USER_SCOPE = "X-User-DataScope"
         /** Bearer 令牌前缀 */
         private const val BEARER_PREFIX = "Bearer "
     }
@@ -93,10 +94,12 @@ class AuthGlobalFilter(
                             h.remove(HEADER_USER_ID)
                             h.remove(HEADER_USER_EMAIL)
                             h.remove(HEADER_USER_ADMIN)
+                            h.remove(HEADER_USER_SCOPE)
                         }
                         .header(HEADER_USER_ID, payload.userId)
                         .header(HEADER_USER_EMAIL, payload.email)
                         .header(HEADER_USER_ADMIN, payload.isAdmin.toString())
+                        .header(HEADER_USER_SCOPE, payload.dataScope.name)
                     val mutated = builder.build()
                     chain.filter(exchange.mutate().request(mutated).build())
                 }

@@ -18,6 +18,7 @@ object AuthContextResolver {
     const val HEADER_USER_ID = "X-User-Id"
     const val HEADER_USER_EMAIL = "X-User-Email"
     const val HEADER_USER_ADMIN = "X-User-Admin"
+    const val HEADER_USER_SCOPE = "X-User-DataScope"
 
     /**
      * @description 从 X-User-* 请求头解析认证主体
@@ -35,7 +36,9 @@ object AuthContextResolver {
         if (userId.isBlank()) return null
         val email = request.getHeader(HEADER_USER_EMAIL) ?: ""
         val isAdmin = request.getHeader(HEADER_USER_ADMIN)?.equals("true", ignoreCase = true) ?: false
-        return AuthPrincipal(userId, email, isAdmin)
+        // 头缺失或非法值回退 SELF（最小数据权限）
+        val dataScope = DataScope.fromName(request.getHeader(HEADER_USER_SCOPE))
+        return AuthPrincipal(userId, email, isAdmin, dataScope)
     }
 
     /**

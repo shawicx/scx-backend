@@ -9,9 +9,11 @@ package com.scx.backend.common.security
  * @property userId 用户 ID（ULID）
  * @property email 用户邮箱
  * @property isAdmin 是否为管理员（令牌嵌入；旧令牌缺失时默认 false）
+ * @property dataScope 数据权限范围（令牌嵌入；头缺失或旧令牌默认 SELF）
  */
 data class AuthPrincipal(
     val userId: String,
     val email: String,
     val isAdmin: Boolean = false,
+    val dataScope: DataScope = DataScope.SELF,
 )

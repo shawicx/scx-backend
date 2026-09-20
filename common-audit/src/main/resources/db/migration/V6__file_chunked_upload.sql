@@ -3,7 +3,10 @@
 -- 归属说明：file_upload_sessions、file_upload_parts、files 表均属
 -- file-service，但迁移放在 common-audit 共享模块——共享库
 -- flyway_schema_history 下所有跑 Flyway 的服务（identity/rbac/file）
--- 必须能解析到同一份版本文件，校验和才一致（与 V2/V3 相同约束）。
+-- 必须能解析到同一份版本文件，校验和才一致（与 V2-V5 相同约束）。
+-- 版本说明：本迁移使用 V6（V4 已被数据字典表 V4__add_dict_tables 占用；
+-- 单库共享 history 表下各服务的版本集合必须完全一致，不允许同版本
+-- 双文件分属不同服务）。
 -- 说明：
 --   - files.size 迁移为 BIGINT 以支持 2GB 以上大文件
 --   - files."fileHash"（SHA-256）用于同用户秒传命中
