@@ -11,6 +11,9 @@ import com.scx.backend.file.dto.FileResponseDto
 import com.scx.backend.file.dto.InitChunkedUploadDto
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.parameters.RequestBody as SwaggerRequestBody
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
@@ -62,6 +65,14 @@ class ChunkedUploadController(
     @Operation(
         summary = "上传分片",
         description = "请求体为分片原始二进制（application/octet-stream），Content-Length 须等于该分片应有大小（非末片=chunkSize，末片=余量）；可选 md5 查询参数与服务端 ETag 比对",
+    )
+    @SwaggerRequestBody(
+        description = "分片原始二进制内容",
+        required = true,
+        content = [Content(
+            mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+            schema = Schema(type = "string", format = "binary"),
+        )],
     )
     @PutMapping("/sessions/{uploadId}/chunks/{partNumber}", consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE])
     fun uploadChunk(

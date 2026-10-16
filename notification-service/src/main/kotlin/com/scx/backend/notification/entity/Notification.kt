@@ -43,10 +43,10 @@ class Notification(
     @Column(name = "pinned", nullable = false)
     var pinned: Boolean = false,
 
-    @Column(name = "targetType", length = 20, nullable = false)
+    @Column(name = "\"targetType\"", length = 20, nullable = false)
     var targetType: String,
 
-    @Column(name = "targetIds", columnDefinition = "TEXT")
+    @Column(name = "\"targetIds\"", columnDefinition = "TEXT")
     var targetIds: String? = null,
 
     @Column(name = "\"recipientEmail\"", length = 100)

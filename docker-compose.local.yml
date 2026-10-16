@@ -60,6 +60,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_HOST: 120.77.144.112
+      # 分片上传走 MinIO 异步客户端，直内存与网关对齐，避免 buildpack 默认 10M 上限
+      JAVA_TOOL_OPTIONS: -XX:MaxDirectMemorySize=256M
     ports:
       - "3004:3004"
     restart: unless-stopped
@@ -71,6 +73,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       REDIS_HOST: 120.77.144.112
+      # Netty 代理大分片 PUT 时直接内存需求远超 buildpack 默认 10M，导致 OOM 503
+      JAVA_TOOL_OPTIONS: -XX:MaxDirectMemorySize=256M
       # 容器间走 compose 网络服务名
       IDENTITY_BASE_URL: http://identity-service:3001
       RBAC_BASE_URL: http://rbac-service:3002

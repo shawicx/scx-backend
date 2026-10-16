@@ -22,6 +22,8 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
+import java.security.MessageDigest
+import java.util.Base64
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
@@ -122,10 +124,23 @@ class MinioStorageService(
     fun uploadPart(objectKey: String, uploadId: String, partNumber: Int, size: Long, data: InputStream): String {
         val tempFile = File.createTempFile("scx-chunk-", ".part")
         try {
-            tempFile.outputStream().use { output -> data.copyTo(output) }
+            val digest = MessageDigest.getInstance("SHA-256")
+            tempFile.outputStream().use { output ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = data.read(buffer)
+                    if (read < 0) break
+                    digest.update(buffer, 0, read)
+                    output.write(buffer, 0, read)
+                }
+            }
             if (tempFile.length() != size) {
                 throw SystemException.invalidParameter("分片实际大小与声明不符：应为 $size 字节，实际 ${tempFile.length()} 字节")
             }
+            // MinIO SDK 9.0.3 会先读 RandomAccessFile 计算签名摘要，文件指针停留在 EOF，
+            // 构造请求体时按该指针 seek 导致实际发送 0 字节（EOFException）。
+            // 预先计算并传入 x-amz-checksum-sha256 可跳过 SDK 的预读，同时服务端校验分片完整性
+            val checksumSha256 = Base64.getEncoder().encodeToString(digest.digest())
             RandomAccessFile(tempFile, "r").use { raf ->
                 return try {
                     await(
@@ -136,6 +151,11 @@ class MinioStorageService(
                                 .uploadId(uploadId)
                                 .partNumber(partNumber)
                                 .file(raf, size)
+                                .headers(
+                                    Http.Headers(
+                                        mapOf(Http.Headers.X_AMZ_CHECKSUM_SHA256 to checksumSha256),
+                                    ),
+                                )
                                 .build(),
                         ),
                     ).part().etag().removeSurrounding("\"").lowercase()
@@ -215,6 +235,7 @@ class MinioStorageService(
             Thread.currentThread().interrupt()
             throw SystemException.serviceUnavailable("文件存储服务暂时不可用")
         } catch (ex: ExecutionException) {
+            logger.error("MinIO 异步调用失败（真实原因见下方堆栈）", ex.cause ?: ex)
             throw SystemException.serviceUnavailable("文件存储服务暂时不可用")
         }
 
