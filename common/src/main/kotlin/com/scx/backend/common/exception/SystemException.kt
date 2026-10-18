@@ -56,5 +56,11 @@ class SystemException(
 
         fun accountDisabled(message: String = SystemErrorCode.ACCOUNT_DISABLED.defaultMessage) =
             SystemException(SystemErrorCode.ACCOUNT_DISABLED, message)
+
+        fun aiConfigMissing(message: String = SystemErrorCode.AI_CONFIG_MISSING.defaultMessage) =
+            SystemException(SystemErrorCode.AI_CONFIG_MISSING, message)
+
+        fun aiProviderError(message: String = SystemErrorCode.AI_PROVIDER_ERROR.defaultMessage, data: Any? = null) =
+            SystemException(SystemErrorCode.AI_PROVIDER_ERROR, message, data)
     }
 }

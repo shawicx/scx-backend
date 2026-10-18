@@ -2,7 +2,7 @@
 # scx-backend 微服务本地联调编排
 # ============================================================
 # 基础设施：PostgreSQL 16（5433）+ Redis 7（6388）+ MinIO（9000 API / 9001 控制台）
-# 应用服务：gateway(8080) + identity(3001) + rbac(3002) + notification(3003) + file(3004)
+# 应用服务：gateway(8080) + identity(3001) + rbac(3002) + notification(3003) + file(3004) + ai(3005)
 #
 # 使用方式：
 #   1. 构建镜像：./gradlew bootBuildImage -x test
@@ -149,6 +149,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ai-service:
+    image: docker.io/library/ai-service:0.0.1-SNAPSHOT
+    container_name: scx-ai
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5433
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   gateway:
     image: docker.io/library/gateway:0.0.1-SNAPSHOT
     container_name: scx-gateway
@@ -162,6 +176,7 @@ services:
       RBAC_BASE_URL: http://rbac-service:3002
       NOTIFICATION_BASE_URL: http://notification-service:3003
       FILE_BASE_URL: http://file-service:3004
+      AI_BASE_URL: http://ai-service:3005
     ports:
       - "8080:8080"
     depends_on:
@@ -174,6 +189,8 @@ services:
       notification-service:
         condition: service_started
       file-service:
+        condition: service_started
+      ai-service:
         condition: service_started
     restart: unless-stopped
 

@@ -58,6 +58,11 @@ spring:
               uri: ${FILE_BASE_URL:http://localhost:3004}
               predicates:
                 - Path=/api/files/**
+            # AI 服务：每用户模型配置 + OpenAI 兼容流式对话代理
+            - id: ai-service
+              uri: ${AI_BASE_URL:http://localhost:3005}
+              predicates:
+                - Path=/api/ai/**
 
 # JWT 密钥（必须与 identity 服务一致，否则验签失败）
 jwt:

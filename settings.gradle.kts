@@ -24,6 +24,7 @@ pluginManagement {
 // - rbac-service        角色权限服务（角色/权限/关联表）
 // - notification-service 通知服务（邮件）
 // - file-service        文件服务（空壳）
+// - ai-service          AI 服务（每用户模型配置 + OpenAI 兼容流式对话代理）
 // ============================================================
 include(
     "common",
@@ -34,4 +35,5 @@ include(
     "rbac-service",
     "notification-service",
     "file-service",
+    "ai-service",
 )

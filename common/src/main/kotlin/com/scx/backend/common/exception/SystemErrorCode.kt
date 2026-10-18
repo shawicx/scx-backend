@@ -3,7 +3,7 @@ package com.scx.backend.common.exception
 /**
  * 系统业务错误码枚举
  *
- * 注意：不含 AI 相关错误码段（9500-9509），AI 能力不在本项目范围。
+ * AI 相关错误码使用预留段 9500-9509（归属 ai-service）。
  */
 enum class SystemErrorCode(val code: Int, val defaultMessage: String) {
     /** 缺少 token */
@@ -46,7 +46,13 @@ enum class SystemErrorCode(val code: Int, val defaultMessage: String) {
     BUSINESS_RULE_VIOLATION(9012, "业务规则限制"),
 
     /** 账户已禁用 */
-    ACCOUNT_DISABLED(9013, "账户已被禁用");
+    ACCOUNT_DISABLED(9013, "账户已被禁用"),
+
+    /** AI 模型未配置 */
+    AI_CONFIG_MISSING(9500, "未配置 AI 模型，请先到个人中心设置"),
+
+    /** AI 上游服务调用失败 */
+    AI_PROVIDER_ERROR(9501, "AI 服务调用失败");
 
     companion object {
         /**
@@ -74,6 +80,10 @@ enum class SystemErrorCode(val code: Int, val defaultMessage: String) {
             RESOURCE_EXISTS.code -> 409
 
             SERVICE_UNAVAILABLE.code -> 503
+
+            AI_CONFIG_MISSING.code -> 400
+
+            AI_PROVIDER_ERROR.code -> 503
 
             else -> 500
         }
