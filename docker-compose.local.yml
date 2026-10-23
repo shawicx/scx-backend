@@ -1,7 +1,7 @@
 # ============================================================
 # scx-backend 本机容器编排（OrbStack / Docker 均可）
 # ------------------------------------------------------------
-# 仅 6 个应用服务：PG/Redis 直连 ECS 共享基础设施（scx-infra，
+# 仅 7 个应用服务：PG/Redis 直连 ECS 共享基础设施（scx-infra，
 # 120.77.144.112:5433/6388，公网 + 密码），MinIO 用 .env 里的 ECS 公网地址。
 # 连本地数据卷的场景（日常开发）请用 ./gradlew bootRun + 本机 scx-infra。
 #
@@ -9,12 +9,13 @@
 #   1. 构建镜像（Boot 4 的 bootBuildImage 默认 tag 为 latest）：
 #      ./gradlew :gateway:bootBuildImage :identity-service:bootBuildImage \
 #                :rbac-service:bootBuildImage :notification-service:bootBuildImage \
-#                :file-service:bootBuildImage :ai-service:bootBuildImage -x test
+#                :file-service:bootBuildImage :ai-service:bootBuildImage \
+#                :blog-service:bootBuildImage -x test
 #   2. 启动：docker compose -f docker-compose.local.yml up -d
 #   3. 对外入口：http://localhost:8080/api（网关）
 #
 # 注意：不占用本机 5433/6388（与 scx-infra 无冲突），但服务端口与
-# bootRun 模式相同（8080/3001-3005），两种模式不要同时启动。
+# bootRun 模式相同（8080/3001-3006），两种模式不要同时启动。
 # ============================================================
 
 services:
@@ -77,6 +78,17 @@ services:
       - "3005:3005"
     restart: unless-stopped
 
+  blog-service:
+    image: docker.io/library/blog-service:latest
+    container_name: scx-blog
+    env_file: [ .env ]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: 120.77.144.112
+    ports:
+      - "3006:3006"
+    restart: unless-stopped
+
   gateway:
     image: docker.io/library/gateway:latest
     container_name: scx-gateway
@@ -92,6 +104,7 @@ services:
       NOTIFICATION_BASE_URL: http://notification-service:3003
       FILE_BASE_URL: http://file-service:3004
       AI_BASE_URL: http://ai-service:3005
+      BLOG_BASE_URL: http://blog-service:3006
     ports:
       - "8080:8080"
     depends_on:
@@ -100,4 +113,5 @@ services:
       - notification-service
       - file-service
       - ai-service
+      - blog-service
     restart: unless-stopped

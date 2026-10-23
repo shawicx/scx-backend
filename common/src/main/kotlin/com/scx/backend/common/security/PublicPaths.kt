@@ -22,6 +22,10 @@ object PublicPaths {
         "/api/users/refresh-token",
         // 邮件发送（notification 服务，全部 @Public）
         "/api/mail/**",
+        // 博客公开内容（blog 服务：文章/分类/标签/评论/互动；管理端在 /api/blog/admin/** 不放行）
+        "/api/blog/posts/**",
+        "/api/blog/categories",
+        "/api/blog/tags",
         // 业务健康检查（identity 服务）
         "/api/health",
         "/api/health/**",

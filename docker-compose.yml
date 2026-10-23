@@ -163,6 +163,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  blog-service:
+    image: docker.io/library/blog-service:0.0.1-SNAPSHOT
+    container_name: scx-blog
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5433
+      BLOG_VISITOR_SALT: ${BLOG_VISITOR_SALT:-scx-blog-visitor-salt}
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   gateway:
     image: docker.io/library/gateway:0.0.1-SNAPSHOT
     container_name: scx-gateway
@@ -177,6 +192,7 @@ services:
       NOTIFICATION_BASE_URL: http://notification-service:3003
       FILE_BASE_URL: http://file-service:3004
       AI_BASE_URL: http://ai-service:3005
+      BLOG_BASE_URL: http://blog-service:3006
     ports:
       - "8080:8080"
     depends_on:
@@ -191,6 +207,8 @@ services:
       file-service:
         condition: service_started
       ai-service:
+        condition: service_started
+      blog-service:
         condition: service_started
     restart: unless-stopped
 

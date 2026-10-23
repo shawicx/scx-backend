@@ -1,0 +1,66 @@
+# blog-service 配置（博客服务）
+spring:
+  application:
+    name: scx-blog
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # 加载项目根目录的 .env 文件（与单体时代一致）
+  config:
+    import: "optional:file:.env[.properties]"
+
+  # 数据源（JPA）—— 共享库 + 逻辑隔离：blog-service 访问 blog_* 表
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_DATABASE:scx-backend}
+    username: ${DB_USERNAME:scx}
+    password: ${DB_PASSWORD:scx_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    # 单库多服务：放行"库中已应用但本服务 classpath 没有"的迁移（低于本地版本视野为 missing，高于为 future）
+    ignore-migration-patterns: "*:missing,*:future"
+
+# 匿名访客标识派生盐：visitorKeyHash = SHA-256(ip + User-Agent + salt)，
+# 用于点赞去重与评论限流的脱敏标识；生产环境建议独立设置且保持稳定
+blog:
+  visitor-salt: ${BLOG_VISITOR_SALT:scx-blog-visitor-salt}
+
+# Swagger
+swagger:
+  enabled: ${SWAGGER_ENABLED:true}
+  title: ${SWAGGER_TITLE:SCX Blog API}
+  description: ${SWAGGER_DESCRIPTION:SCX Blog Service API}
+  version: ${SWAGGER_VERSION:1.0}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: ${BLOG_PORT:3006}
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    com.scx.backend: DEBUG

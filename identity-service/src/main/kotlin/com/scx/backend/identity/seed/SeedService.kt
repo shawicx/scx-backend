@@ -140,6 +140,27 @@ class SeedService(
                 ButtonSeed("update", "dict-data"),
                 ButtonSeed("delete", "dict-data"),
             )),
+            MenuSeed("博客概览", "/blog/dashboard", "blog-dashboard", 9, emptyList()),
+            MenuSeed("文章管理", "/blog/posts", "blog-posts", 10, listOf(
+                ButtonSeed("create", "blog-post"),
+                ButtonSeed("update", "blog-post"),
+                ButtonSeed("delete", "blog-post"),
+                ButtonSeed("publish", "blog-post"),
+            )),
+            MenuSeed("分类管理", "/blog/categories", "blog-categories", 11, listOf(
+                ButtonSeed("create", "blog-category"),
+                ButtonSeed("update", "blog-category"),
+                ButtonSeed("delete", "blog-category"),
+            )),
+            MenuSeed("标签管理", "/blog/tags", "blog-tags", 12, listOf(
+                ButtonSeed("create", "blog-tag"),
+                ButtonSeed("update", "blog-tag"),
+                ButtonSeed("delete", "blog-tag"),
+            )),
+            MenuSeed("评论管理", "/blog/comments", "blog-comments", 13, listOf(
+                ButtonSeed("audit", "blog-comment"),
+                ButtonSeed("delete", "blog-comment"),
+            )),
         )
 
         dict.forEach { menuSeed ->

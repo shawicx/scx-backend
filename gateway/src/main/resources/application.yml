@@ -63,6 +63,12 @@ spring:
               uri: ${AI_BASE_URL:http://localhost:3005}
               predicates:
                 - Path=/api/ai/**
+            # 博客服务：公开内容（文章/分类/标签/评论/互动）+ 管理端
+            # 公开读路径在 PublicPaths 白名单放行，/api/blog/admin/** 需登录管理员
+            - id: blog-service
+              uri: ${BLOG_BASE_URL:http://localhost:3006}
+              predicates:
+                - Path=/api/blog/**
 
 # JWT 密钥（必须与 identity 服务一致，否则验签失败）
 jwt:
