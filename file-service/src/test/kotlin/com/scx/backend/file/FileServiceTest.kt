@@ -188,6 +188,36 @@ class FileServiceTest {
 
     // ---------- 批量删除 ----------
 
+    // ---------- 公开内容访问 ----------
+
+    @Test
+    fun `presignedContentUrl returns presigned link for existing file`() {
+        val file = fileEntity(id = "f-9")
+        given(repository.findById("f-9")).willReturn(Optional.of(file))
+        given(storageService.presignedGetUrl(file.path)).willReturn("https://presigned/a.png")
+
+        assertEquals("https://presigned/a.png", fileService.presignedContentUrl("f-9"))
+    }
+
+    @Test
+    fun `presignedContentUrl rejects missing file`() {
+        given(repository.findById("gone")).willReturn(Optional.empty())
+
+        val ex = assertThrows<SystemException> { fileService.presignedContentUrl("gone") }
+        assertEquals(SystemErrorCode.DATA_NOT_FOUND.code, ex.code)
+        verifyNoInteractions(storageService)
+    }
+
+    @Test
+    fun `presignedContentUrl rejects deleted file`() {
+        given(repository.findById("f-2"))
+            .willReturn(Optional.of(fileEntity(id = "f-2", deletedAt = LocalDateTime.now())))
+
+        val ex = assertThrows<SystemException> { fileService.presignedContentUrl("f-2") }
+        assertEquals(SystemErrorCode.DATA_NOT_FOUND.code, ex.code)
+        verifyNoInteractions(storageService)
+    }
+
     @Test
     fun `deleteFiles only soft-deletes owned files for SELF scope`() {
         val own = fileEntity(id = "a", userId = "user-1")

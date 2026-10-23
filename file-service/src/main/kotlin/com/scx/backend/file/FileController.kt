@@ -1,6 +1,7 @@
 package com.scx.backend.file
 
 import com.scx.backend.common.dto.CountResultDto
+import com.scx.backend.common.decorator.Public
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.common.security.AuthPrincipal
 import com.scx.backend.commonaudit.annotation.OperationLog
@@ -12,10 +13,14 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import java.net.URI
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -80,6 +85,19 @@ class FileController(
         val user = requirePrincipal(principal)
         return fileService.deleteFiles(user.userId, user.dataScope, dto)
     }
+
+    @Public
+    @Operation(
+        summary = "文件内容访问",
+        description = "按 ID 302 跳转到临时预签名直链（公开匿名端点，供博客正文图片/附件等稳定 URL 引用）",
+    )
+    @GetMapping("/{id}/content")
+    fun content(
+        @Parameter(description = "文件 ID", required = true) @PathVariable id: String,
+    ): ResponseEntity<Void> =
+        ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(fileService.presignedContentUrl(id)))
+            .build()
 
     /**
      * @description 解析认证主体；直连访问缺失网关注入的身份头时返回 401（而非 500）

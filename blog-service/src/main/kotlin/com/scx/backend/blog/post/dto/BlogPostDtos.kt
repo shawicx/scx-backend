@@ -1,6 +1,7 @@
 package com.scx.backend.blog.post.dto
 
 import com.scx.backend.blog.entity.BlogPost
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
@@ -167,6 +168,7 @@ data class PostAdminListItemDto(
     @Schema(description = "标签列表") val tags: List<TagBriefDto>,
     @Schema(description = "状态（0 草稿 / 1 已发布 / 2 已归档）") val status: Int,
     @Schema(description = "可见性（0 公开 / 1 私密）") val visibility: Int,
+    @get:JsonProperty("isTop")
     @Schema(description = "是否置顶") val isTop: Boolean,
     @Schema(description = "是否允许评论") val allowComment: Boolean,
     @Schema(description = "发布时间（未发布为 null）") val publishedAt: LocalDateTime?,
@@ -199,6 +201,7 @@ data class PostDetailResponseDto(
     @Schema(description = "标签 ID 列表") val tagIds: List<String>,
     @Schema(description = "状态（0 草稿 / 1 已发布 / 2 已归档）") val status: Int,
     @Schema(description = "可见性（0 公开 / 1 私密）") val visibility: Int,
+    @get:JsonProperty("isTop")
     @Schema(description = "是否置顶") val isTop: Boolean,
     @Schema(description = "是否允许评论") val allowComment: Boolean,
     @Schema(description = "发布时间") val publishedAt: LocalDateTime?,
@@ -272,6 +275,7 @@ data class PostPublicListItemDto(
     @Schema(description = "封面文件 ID") val coverFileId: String?,
     @Schema(description = "分类信息（未分类为 null）") val category: CategoryBriefDto?,
     @Schema(description = "标签列表") val tags: List<TagBriefDto>,
+    @get:JsonProperty("isTop")
     @Schema(description = "是否置顶") val isTop: Boolean,
     @Schema(description = "发布时间") val publishedAt: LocalDateTime?,
     @Schema(description = "累计阅读数") val viewCount: Long,

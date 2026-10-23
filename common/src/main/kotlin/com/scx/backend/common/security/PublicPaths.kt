@@ -26,6 +26,8 @@ object PublicPaths {
         "/api/blog/posts/**",
         "/api/blog/categories",
         "/api/blog/tags",
+        // 文件内容公开访问（file 服务：博客正文图片/附件的稳定 URL，302 到预签名直链）
+        "/api/files/*/content",
         // 业务健康检查（identity 服务）
         "/api/health",
         "/api/health/**",

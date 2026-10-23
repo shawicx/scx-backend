@@ -85,6 +85,8 @@ class BlogApiTest(
         val post1 = objectMapper.readTree(draft.body()).get("data")
         assertEquals(0, post1.get("status").asInt())
         assertEquals(listOf(tagId), post1.get("tagIds").map { it.asText() })
+        // 契约锁定：is 前缀 Boolean 必须序列化为 isTop（Jackson getter 折叠问题）
+        assertFalse(post1.get("isTop").asBoolean())
 
         assertEquals(0, objectMapper.readTree(get("/blog/posts").body()).get("data").get("total").asLong())
         assertEquals(404, get("/blog/posts/hello-blog").statusCode())

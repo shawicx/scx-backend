@@ -171,6 +171,23 @@ class FileService(
     }
 
     /**
+     * @description 生成公开内容访问的预签名直链（博客正文图片/附件等匿名引用场景）
+     *
+     * 按文件 ID 直查（不做归属校验）：引用方持有稳定 URL `/api/files/{id}/content`，
+     * 每次访问由本方法换取临时预签名直链，正文里无需存储会过期的地址。
+     * 注意：文件 ID 为 ULID 不可枚举，但该能力使全部未删除文件可按 ID 公开访问。
+     * @param fileId 文件 ID
+     * @returns String 临时预签名直链
+     */
+    fun presignedContentUrl(fileId: String): String {
+        val file = fileRepository.findById(fileId).orElse(null)
+        if (file == null || file.deletedAt != null) {
+            throw SystemException.dataNotFound("文件不存在或已删除")
+        }
+        return storageService.presignedGetUrl(file.path)
+    }
+
+    /**
      * @description 批量软删除文件（置 deletedAt，MinIO 对象保留；跳过非本人/已删除项）
      * @param userId 当前用户 ID
      * @param dataScope 数据权限范围（ALL 可删除任意用户文件）
