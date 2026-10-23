@@ -19,7 +19,7 @@ import java.net.http.HttpResponse
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * @description AI 模块 HTTP 集成测试：配置掩码保存、空 Key 保留、SSE 流式对话与消息落库
+ * @description AI 模块 HTTP 集成测试：配置掩码保存、空 Key 保留、多会话（新建/归属校验/重命名/删除）与 SSE 流式落库
  * （直连服务端口，手工注入 X-User-* 头模拟网关；用 JDK HttpServer 伪装 OpenAI 兼容上游）
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -76,7 +76,7 @@ class AiApiTest(
     }
 
     @Test
-    fun `blank api key keeps saved one and chat streams with persistence`() {
+    fun `multi session lifecycle with sse chat persistence and rename`() {
         val user = mapOf("X-User-Id" to "U_AI_2")
 
         // 第二次保存 apiKey 传空：应保留第一次的 Key（以伪装上游收到的 Bearer 头验证）
@@ -93,50 +93,104 @@ class AiApiTest(
         )
         assertEquals(200, second.statusCode())
 
+        // 1. 无 sessionId 发起对话：新建会话，SSE 先发 session 事件再流式
         val chat = post("/ai/chat", """{"content":"打个招呼"}""", user)
         assertEquals(200, chat.statusCode())
         assertTrue(chat.headers().firstValue("content-type").orElse("").startsWith("text/event-stream"))
+        assertTrue(chat.body().contains("event: session"))
         assertTrue(chat.body().contains("event: delta"))
         assertTrue(chat.body().contains("你好"))
         assertTrue(chat.body().contains("，世界"))
         assertTrue(chat.body().contains("event: done"))
         assertEquals("Bearer sk-keep-1234567890", lastAuthHeader.get())
+        val sessionId = Regex("\"sessionId\":\"([^\"]+)\"").find(chat.body())!!.groupValues[1]
 
-        // 用户消息 + 助手回复均落库，时间正序
-        val messages = objectMapper.readTree(get("/ai/messages", user).body()).get("data").get("list")
+        // 2. 会话列表：1 条，标题取首条消息前 30 字符
+        val sessions = objectMapper.readTree(get("/ai/sessions/list", user).body()).get("data").get("list")
+        assertEquals(1, sessions.size())
+        assertEquals("打个招呼", sessions.get(0).get("title").asText())
+
+        // 3. 会话内历史：user + assistant，时间正序
+        val messages = objectMapper.readTree(get("/ai/messages?sessionId=$sessionId", user).body()).get("data").get("list")
         assertEquals(2, messages.size())
         assertEquals("user", messages.get(0).get("role").asText())
         assertEquals("打个招呼", messages.get(0).get("content").asText())
         assertEquals("assistant", messages.get(1).get("role").asText())
         assertEquals("你好，世界", messages.get(1).get("content").asText())
 
-        // 清空会话后历史为空
-        val cleared = post("/ai/messages/clear", "{}", user)
-        assertTrue(objectMapper.readTree(cleared.body()).get("success").asBoolean())
-        val afterClear = objectMapper.readTree(get("/ai/messages", user).body()).get("data").get("list")
-        assertEquals(0, afterClear.size())
+        // 4. 重命名会话
+        val renamed = put(
+            "/ai/sessions/update",
+            """{"id":"$sessionId","title":"改名后的会话"}""",
+            user,
+        )
+        assertEquals(200, renamed.statusCode())
+        assertEquals(
+            "改名后的会话",
+            objectMapper.readTree(renamed.body()).get("data").get("title").asText(),
+        )
+
+        // 5. 携带既有 sessionId 继续对话：消息追加到同一会话
+        val chatAgain = post("/ai/chat", """{"sessionId":"$sessionId","content":"再来一句"}""", user)
+        assertTrue(chatAgain.body().contains("event: done"))
+        val afterSecond = objectMapper.readTree(get("/ai/messages?sessionId=$sessionId", user).body()).get("data").get("list")
+        assertEquals(4, afterSecond.size())
+
+        // 6. 归属校验：不存在的会话 9002（他人的会话同样视同不存在）
+        val foreign = post(
+            "/ai/chat",
+            """{"sessionId":"NO_SUCH_SESSION","content":"x"}""",
+            mapOf("X-User-Id" to "U_AI_2"),
+        )
+        assertEquals(404, foreign.statusCode())
+        assertEquals(9002, objectMapper.readTree(foreign.body()).get("statusCode").asInt())
+
+        // 7. 删除会话：连同消息一并删除
+        val deleted = delete("/ai/sessions/delete?id=$sessionId", user)
+        assertTrue(objectMapper.readTree(deleted.body()).get("success").asBoolean())
+        val afterDelete = objectMapper.readTree(get("/ai/sessions/list", user).body()).get("data").get("list")
+        assertEquals(0, afterDelete.size())
+        val orphanMessages = get("/ai/messages?sessionId=$sessionId", user)
+        assertEquals(404, orphanMessages.statusCode())
+
+        // 8. 清空全部会话：再建两个会话后一次清空
+        val chatB = post("/ai/chat", """{"content":"第二个会话"}""", user)
+        val sessionB = Regex("\"sessionId\":\"([^\"]+)\"").find(chatB.body())!!.groupValues[1]
+        post("/ai/chat", """{"content":"第三个会话"}""", user)
+        assertEquals(2, objectMapper.readTree(get("/ai/sessions/list", user).body()).get("data").get("list").size())
+        val clearedAll = post("/ai/messages/clear", "{}", user)
+        assertTrue(objectMapper.readTree(clearedAll.body()).get("success").asBoolean())
+        assertEquals(0, objectMapper.readTree(get("/ai/sessions/list", user).body()).get("data").get("list").size())
+        assertEquals(404, get("/ai/messages?sessionId=$sessionB", user).statusCode())
     }
 
-    private fun post(path: String, body: String, headers: Map<String, String> = emptyMap()): HttpResponse<String> =
+    private fun request(
+        method: String,
+        path: String,
+        body: String? = null,
+        headers: Map<String, String> = emptyMap(),
+    ): HttpResponse<String> =
         http.send(
             HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:$port/api$path"))
                 .header("Content-Type", "application/json")
                 .headers(*headers.flatMap { listOf(it.key, it.value) }.toTypedArray())
-                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .method(method, body?.let { HttpRequest.BodyPublishers.ofString(it) } ?: HttpRequest.BodyPublishers.noBody())
                 .build(),
             HttpResponse.BodyHandlers.ofString(),
         )
 
+    private fun post(path: String, body: String, headers: Map<String, String> = emptyMap()): HttpResponse<String> =
+        request("POST", path, body, headers)
+
+    private fun put(path: String, body: String, headers: Map<String, String> = emptyMap()): HttpResponse<String> =
+        request("PUT", path, body, headers)
+
     private fun get(path: String, headers: Map<String, String> = emptyMap()): HttpResponse<String> =
-        http.send(
-            HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:$port/api$path"))
-                .headers(*headers.flatMap { listOf(it.key, it.value) }.toTypedArray())
-                .GET()
-                .build(),
-            HttpResponse.BodyHandlers.ofString(),
-        )
+        request("GET", path, null, headers)
+
+    private fun delete(path: String, headers: Map<String, String> = emptyMap()): HttpResponse<String> =
+        request("DELETE", path, null, headers)
 
     companion object {
         private val lastAuthHeader = AtomicReference<String?>()

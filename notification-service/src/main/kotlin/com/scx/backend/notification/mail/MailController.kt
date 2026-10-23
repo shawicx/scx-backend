@@ -1,6 +1,7 @@
 package com.scx.backend.notification.mail
 
 import com.scx.backend.common.decorator.Public
+import com.scx.backend.common.dto.MessageDto
 import com.scx.backend.common.exception.SystemException
 import com.scx.backend.notification.mail.dto.SendHtmlEmailDto
 import com.scx.backend.notification.mail.dto.SendPasswordResetDto
@@ -42,20 +43,22 @@ class MailController(
     @Public
     @Operation(summary = "发送密码重置邮件", description = "向指定邮箱发送含重置链接的密码重置邮件")
     @PostMapping("/send-password-reset")
-    fun sendPasswordResetEmail(@Valid @RequestBody dto: SendPasswordResetDto) {
+    fun sendPasswordResetEmail(@Valid @RequestBody dto: SendPasswordResetDto): MessageDto {
         val result = mailService.sendPasswordResetEmail(dto.email, dto.resetToken, dto.resetUrl)
         if (!result.success) {
             throw SystemException.operationFailed(result.error ?: result.message)
         }
+        return MessageDto("密码重置邮件发送成功")
     }
 
     @Public
     @Operation(summary = "发送自定义 HTML 邮件", description = "向指定邮箱发送自定义主题与 HTML 内容的邮件")
     @PostMapping("/send-html-email")
-    fun sendHtmlEmail(@Valid @RequestBody dto: SendHtmlEmailDto) {
+    fun sendHtmlEmail(@Valid @RequestBody dto: SendHtmlEmailDto): MessageDto {
         val result = mailService.sendHtmlMail(dto.email, dto.subject, dto.html)
         if (!result.success) {
             throw SystemException.operationFailed(result.error ?: result.message)
         }
+        return MessageDto("HTML 邮件发送成功")
     }
 }

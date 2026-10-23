@@ -10,9 +10,13 @@ import java.time.LocalDateTime
  * @description AI 对话相关 DTO（发送消息 / 历史消息 / SSE 事件负载）
  */
 
-/** 发送消息请求 */
+/** 发送消息请求（sessionId 缺省时服务端新建会话，标题取首条消息前 30 字符） */
 @Schema(description = "发送消息请求")
 data class ChatRequestDto(
+    @Schema(description = "会话 ID（缺省时新建会话）")
+    @field:Size(max = 30, message = "会话ID不能超过30个字符")
+    val sessionId: String? = null,
+
     @Schema(description = "用户消息内容", required = true)
     @field:NotBlank(message = "消息内容不能为空")
     @field:Size(max = 8000, message = "消息内容不能超过8000个字符")
@@ -48,6 +52,13 @@ data class MessageListResponseDto(
     @Schema(description = "消息列表（时间正序）") val list: List<MessageResponseDto>,
 )
 
+/** SSE 会话事件负载（流式开始前发送：新建或既有会话的 ID 与标题） */
+@Schema(description = "SSE 会话事件（event: session）")
+data class SessionEventDto(
+    @Schema(description = "会话 ID") val sessionId: String,
+    @Schema(description = "会话标题") val title: String,
+)
+
 /** SSE 增量事件负载 */
 @Schema(description = "SSE 增量事件（event: delta）")
 data class DeltaEventDto(
@@ -58,6 +69,7 @@ data class DeltaEventDto(
 @Schema(description = "SSE 完成事件（event: done）")
 data class DoneEventDto(
     @Schema(description = "落库后的助手消息 ID") val messageId: String,
+    @Schema(description = "会话 ID") val sessionId: String,
 )
 
 /** SSE 失败事件负载 */

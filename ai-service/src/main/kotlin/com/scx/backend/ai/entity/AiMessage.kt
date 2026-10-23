@@ -7,7 +7,7 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
- * @description AI 会话消息实体（初版单会话：按 userId + createdAt 时间序即完整会话）
+ * @description AI 会话消息实体（多会话：按 sessionId 归属会话，会话内按 createdAt 时间序）
  *
  * role 为 user / assistant；userId 逻辑引用 users 表（属 identity-service），
  * 仅 DDL 外键不建 JPA 实体。
@@ -22,6 +22,9 @@ class AiMessage(
 
     @Column(name = "\"userId\"", length = 30, nullable = false)
     var userId: String,
+
+    @Column(name = "\"sessionId\"", length = 30, nullable = false)
+    var sessionId: String,
 
     @Column(name = "role", length = 20, nullable = false)
     var role: String,
